@@ -31,6 +31,8 @@ You can start developing by editing the files inside the **app** directory. This
 - **Email rate limit:** If you see "email rate limit exceeded", either wait for the limit to reset or turn off **Confirm email** in Supabase Dashboard → Authentication → Providers → Email. Disabling confirmation avoids sending sign-up emails so you won’t hit the limit during development.
 - **Env:** Copy `.env.example` to `.env` and set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (from your Supabase project). `.env` is gitignored; keys are loaded via `app.config.js` and are not stored in source.
 - **Auth testing:** See [docs/AUTH_TESTING.md](docs/AUTH_TESTING.md) for manual test cases.
+- **Phase 1 (rides):** Run `supabase/migrations/002_trips_and_reservations.sql` in the SQL Editor to create the `trips` and `reservations` tables and the `accept_reservation` RPC.
+- **Phase 2 (UI):** Run `supabase/migrations/003_phase2_rls.sql` so the app can show driver/passenger names and let trip creators decline reservations.
 
 ## Get a fresh project
 

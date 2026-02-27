@@ -1,0 +1,337 @@
+import { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+  TextInput,
+} from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { supabase } from "@/lib/supabase";
+import { Button } from "@/components/AuthComponents";
+import { colors, typography, spacing, radius } from "@/constants/theme";
+
+type Trip = {
+  id: string;
+  from_city: string;
+  to_city: string;
+  departure_time: string;
+  seats_available: number;
+  seats_total: number;
+  price: number;
+  pickup_note: string | null;
+  dropoff_note: string | null;
+  profiles: { full_name: string | null } | null;
+};
+
+export default function TripDetailsScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [trip, setTrip] = useState<Trip | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [requesting, setRequesting] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+  const [seatsModalVisible, setSeatsModalVisible] = useState(false);
+  const [seatsRequested, setSeatsRequested] = useState("1");
+
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    supabase
+      .from("trips")
+      .select("id, from_city, to_city, departure_time, seats_available, seats_total, price, pickup_note, dropoff_note, profiles!creator_id(full_name)")
+      .eq("id", id)
+      .single()
+      .then(({ data, error: e }) => {
+        setLoading(false);
+        if (e) {
+          setError(e.message);
+          setTrip(null);
+          return;
+        }
+        setTrip(data as Trip);
+      });
+  }, [id]);
+
+  const formatDateTime = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  const handleRequestSeats = async () => {
+    if (!trip || !id) return;
+    const num = Math.max(1, parseInt(seatsRequested, 10) || 1);
+    if (num > trip.seats_available) {
+      setError("Not enough seats available");
+      setSeatsModalVisible(false);
+      return;
+    }
+    setRequesting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setRequesting(false);
+      setSeatsModalVisible(false);
+      return;
+    }
+    const { error: e } = await supabase.from("reservations").insert({
+      trip_id: id,
+      passenger_id: user.id,
+      seats_requested: num,
+      status: "pending",
+    });
+    setRequesting(false);
+    setSeatsModalVisible(false);
+    if (e) {
+      setError(e.message);
+      return;
+    }
+    setRequestSent(true);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error && !trip) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.link}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!trip) return null;
+
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+    >
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.back}>← Back</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.route}>
+        {trip.from_city} → {trip.to_city}
+      </Text>
+      <Text style={styles.dateTime}>{formatDateTime(trip.departure_time)}</Text>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Trip details</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Seats available</Text>
+          <Text style={styles.value}>{trip.seats_available} / {trip.seats_total}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Price (per seat)</Text>
+          <Text style={styles.value}>{trip.price} den</Text>
+        </View>
+        {trip.pickup_note ? (
+          <View style={styles.row}>
+            <Text style={styles.label}>Pickup note</Text>
+            <Text style={styles.value}>{trip.pickup_note}</Text>
+          </View>
+        ) : null}
+        {trip.dropoff_note ? (
+          <View style={styles.row}>
+            <Text style={styles.label}>Dropoff note</Text>
+            <Text style={styles.value}>{trip.dropoff_note}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Driver</Text>
+        <Text style={styles.driverName}>
+          {trip.profiles?.full_name ?? "—"}
+        </Text>
+      </View>
+
+      {requestSent ? (
+        <View style={styles.sent}>
+          <Text style={styles.sentText}>Request sent. The driver will confirm.</Text>
+        </View>
+      ) : trip.seats_available > 0 ? (
+        <Button
+          label="Request seats"
+          onPress={() => setSeatsModalVisible(true)}
+          style={styles.btn}
+        />
+      ) : (
+        <Text style={styles.full}>This trip is full.</Text>
+      )}
+
+      {error ? (
+        <Text style={[styles.errorText, { marginTop: spacing.md }]}>{error}</Text>
+      ) : null}
+
+      <Modal
+        visible={seatsModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSeatsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Number of seats</Text>
+            <TextInput
+              value={seatsRequested}
+              onChangeText={(v) => setSeatsRequested(v.replace(/\D/g, "") || "1")}
+              keyboardType="number-pad"
+              style={styles.modalInput}
+              placeholder="1"
+            />
+            <View style={styles.modalRow}>
+              <Button
+                label="Cancel"
+                variant="outline"
+                onPress={() => setSeatsModalVisible(false)}
+                style={styles.modalBtn}
+              />
+              <Button
+                label="Send request"
+                onPress={handleRequestSeats}
+                loading={requesting}
+                disabled={requesting}
+                style={styles.modalBtn}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.xl, paddingBottom: spacing["3xl"] },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: spacing.xl,
+  },
+  errorText: { color: colors.error, textAlign: "center" },
+  link: {
+    marginTop: spacing.md,
+    fontSize: typography.sizes.base,
+    color: colors.primary,
+    fontWeight: typography.weights.semibold,
+  },
+  header: { marginBottom: spacing.lg },
+  back: {
+    fontSize: typography.sizes.base,
+    color: colors.primary,
+    fontWeight: typography.weights.semibold,
+  },
+  route: {
+    fontSize: typography.sizes.xl,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  dateTime: {
+    fontSize: typography.sizes.base,
+    color: colors.textSecondary,
+    marginBottom: spacing.xl,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cardTitle: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  row: { marginBottom: spacing.sm },
+  label: { fontSize: typography.sizes.sm, color: colors.textMuted },
+  value: { fontSize: typography.sizes.base, color: colors.text, marginTop: 2 },
+  driverName: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
+  },
+  btn: { marginTop: spacing.lg },
+  sent: {
+    marginTop: spacing.lg,
+    padding: spacing.base,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.md,
+  },
+  sentText: {
+    fontSize: typography.sizes.base,
+    color: colors.primary,
+    fontWeight: typography.weights.medium,
+    textAlign: "center",
+  },
+  full: {
+    marginTop: spacing.lg,
+    fontSize: typography.sizes.base,
+    color: colors.textMuted,
+    textAlign: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: spacing.xl,
+  },
+  modalBox: {
+    backgroundColor: colors.background,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    width: "100%",
+    maxWidth: 320,
+  },
+  modalTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.base,
+    fontSize: typography.sizes.base,
+    color: colors.text,
+    marginBottom: spacing.lg,
+  },
+  modalRow: {
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  modalBtn: { flex: 1 },
+});
