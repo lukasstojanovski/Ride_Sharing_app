@@ -25,6 +25,12 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Supabase auth
+
+- **Profiles table:** Run the SQL in `supabase/migrations/001_profiles.sql` in your Supabase project (Dashboard → SQL Editor) to create the `profiles` table and the trigger that creates a profile on sign-up.
+- **Env (optional):** For production, set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (e.g. in EAS Secrets or `.env` with a compatible loader). If unset, the app uses the default URL/key in `lib/supabase.ts`.
+- **Auth testing:** See [docs/AUTH_TESTING.md](docs/AUTH_TESTING.md) for manual test cases.
+
 ## Get a fresh project
 
 When you're ready, run:
