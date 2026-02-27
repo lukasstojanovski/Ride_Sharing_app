@@ -1,14 +1,17 @@
 import "react-native-url-polyfill/auto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 import { createClient } from "@supabase/supabase-js";
 
-// Use EAS/extra env in production: set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
-const supabaseUrl =
-  process.env.EXPO_PUBLIC_SUPABASE_URL ??
-  "https://rweejuvybrjpotcsvjii.supabase.co";
-const supabaseAnonKey =
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3ZWVqdXZ5YnJqcG90Y3N2amlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3OTQxNzAsImV4cCI6MjA4NzM3MDE3MH0._bm-M-RhwrcnbfIXV_MmpNwu6jLoz6xUyDBwtCJujsc";
+const extra = Constants.expoConfig?.extra ?? {};
+const supabaseUrl = extra.supabaseUrl ?? "";
+const supabaseAnonKey = extra.supabaseAnonKey ?? "";
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    "Missing Supabase env. Copy .env.example to .env and set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY."
+  );
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

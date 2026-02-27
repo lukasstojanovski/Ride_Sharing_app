@@ -1,9 +1,15 @@
 import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/AuthComponents";
 import { colors, typography, spacing } from "@/constants/theme";
 
 export default function SignupSuccessScreen() {
+  const handleGoToLogin = async () => {
+    await supabase.auth.signOut();
+    router.replace("/login");
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.emoji}>🎉</Text>
@@ -11,7 +17,8 @@ export default function SignupSuccessScreen() {
       <Text style={styles.subtitle}>Your account has been created.</Text>
       <Button
         label="Go back to Log in"
-        onPress={() => router.replace("/login")}
+        onPress={handleGoToLogin}
+        variant="primary"
       />
     </View>
   );

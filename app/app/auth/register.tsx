@@ -55,41 +55,24 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      // 1. Create the auth user
+      // 1. Create the auth user; trigger on auth.users creates the profile row (no client write = no RLS issue)
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          // Skip email confirmation for easier testing
-          // To re-enable: remove emailRedirectTo and turn on "Confirm email" in Supabase dashboard
           data: {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
+            full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+            phone: phone || null,
           },
         },
       });
 
       if (signUpError) throw signUpError;
 
-      // 2. Create the profile row
-      if (data.user) {
-        const { error: profileError } = await supabase.from("profiles").upsert({
-          id: data.user.id,
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          full_name: `${firstName.trim()} ${lastName.trim()}`,
-          email: email,
-          phone: phone || null,
-          phone_verified: false,
-          updated_at: new Date().toISOString(),
-        });
-        if (profileError) throw profileError;
-      }
-
-      // 3. Go to phone screen (phone verification skipped for now — user can skip)
-      console.log("About to redirect to success screen");
-
-      router.replace("/tabs/signup-success");
+      // 2. Profile row is created by DB trigger; we don't write from client to avoid RLS when session isn't set yet (e.g. if email confirmation is on)
+      router.replace("/signup-success");
     } catch (err: any) {
       setErrors({ general: err.message || t.error });
     } finally {

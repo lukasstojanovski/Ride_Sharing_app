@@ -1,8 +1,15 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
+import { supabase } from "@/lib/supabase";
+import { Button } from "@/components/AuthComponents";
 import { colors, typography, spacing } from "@/constants/theme";
 
 export default function HomeScreen() {
+  const handleLogOut = async () => {
+    await supabase.auth.signOut();
+    router.replace("/login");
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.text}>🚗 Home screen coming soon</Text>
@@ -12,6 +19,12 @@ export default function HomeScreen() {
       >
         <Text style={styles.linkText}>Add phone number</Text>
       </TouchableOpacity>
+      <Button
+        label="Log out"
+        onPress={handleLogOut}
+        variant="outline"
+        style={styles.logOutBtn}
+      />
     </View>
   );
 }
@@ -34,4 +47,5 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: typography.weights.semibold,
   },
+  logOutBtn: { marginTop: spacing.lg, minWidth: 160 },
 });

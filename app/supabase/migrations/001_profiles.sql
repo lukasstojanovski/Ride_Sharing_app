@@ -1,5 +1,6 @@
 -- Profiles table linked to auth.users for ride-sharing app.
 -- Run this in Supabase Dashboard > SQL Editor.
+-- If you already ran an older version, run the whole file again (idempotent) or at least the handle_new_user function and trigger so the trigger creates the profile and the app never inserts (avoids RLS "new row violates row-level security").
 
 -- Create profiles table (id = auth.users.id)
 create table if not exists public.profiles (
@@ -29,20 +30,25 @@ create policy "Users can insert own profile"
   on public.profiles for insert
   with check (auth.uid() = id);
 
--- Trigger: create profile on signup
+-- Trigger: create profile on signup (runs with definer rights, so not blocked by RLS)
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, first_name, last_name, email)
+  insert into public.profiles (id, full_name, first_name, last_name, email, phone, phone_verified)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'full_name', trim((new.raw_user_meta_data->>'first_name') || ' ' || (new.raw_user_meta_data->>'last_name'))),
+    coalesce(
+      new.raw_user_meta_data->>'full_name',
+      trim(coalesce(new.raw_user_meta_data->>'first_name', '') || ' ' || coalesce(new.raw_user_meta_data->>'last_name', ''))
+    ),
     new.raw_user_meta_data->>'first_name',
     new.raw_user_meta_data->>'last_name',
-    new.email
+    new.email,
+    new.raw_user_meta_data->>'phone',
+    false
   );
   return new;
 end;

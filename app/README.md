@@ -28,7 +28,8 @@ You can start developing by editing the files inside the **app** directory. This
 ## Supabase auth
 
 - **Profiles table:** Run the SQL in `supabase/migrations/001_profiles.sql` in your Supabase project (Dashboard → SQL Editor) to create the `profiles` table and the trigger that creates a profile on sign-up.
-- **Env (optional):** For production, set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (e.g. in EAS Secrets or `.env` with a compatible loader). If unset, the app uses the default URL/key in `lib/supabase.ts`.
+- **Email rate limit:** If you see "email rate limit exceeded", either wait for the limit to reset or turn off **Confirm email** in Supabase Dashboard → Authentication → Providers → Email. Disabling confirmation avoids sending sign-up emails so you won’t hit the limit during development.
+- **Env:** Copy `.env.example` to `.env` and set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (from your Supabase project). `.env` is gitignored; keys are loaded via `app.config.js` and are not stored in source.
 - **Auth testing:** See [docs/AUTH_TESTING.md](docs/AUTH_TESTING.md) for manual test cases.
 
 ## Get a fresh project
