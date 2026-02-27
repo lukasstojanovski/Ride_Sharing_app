@@ -2,11 +2,16 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
+  first_name text,
+  last_name text,
+  email text,
   avatar_url text,
   phone text,
+  phone_verified boolean not null default false,
   bio text,
   rating numeric default 5.0,
-  created_at timestamptz default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 alter table public.profiles enable row level security;
@@ -34,11 +39,18 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, phone)
+  insert into public.profiles (id, full_name, first_name, last_name, email, phone, phone_verified)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'full_name', ''),
-    new.phone
+    coalesce(
+      new.raw_user_meta_data->>'full_name',
+      trim(coalesce(new.raw_user_meta_data->>'first_name', '') || ' ' || coalesce(new.raw_user_meta_data->>'last_name', ''))
+    ),
+    new.raw_user_meta_data->>'first_name',
+    new.raw_user_meta_data->>'last_name',
+    new.email,
+    coalesce(new.raw_user_meta_data->>'phone', new.phone),
+    false
   )
   on conflict (id) do nothing;
 

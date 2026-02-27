@@ -82,11 +82,7 @@ export default function AddPhoneScreen() {
       }
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({
-          phone: fullPhone,
-          phone_verified: false,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ phone: fullPhone })
         .eq("id", user.id);
       if (updateError) throw updateError;
       router.replace("/tabs/home");

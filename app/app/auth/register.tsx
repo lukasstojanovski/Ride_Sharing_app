@@ -82,15 +82,11 @@ export default function RegisterScreen() {
 
       if (signUpError) throw signUpError;
 
-      // 2. Profile row is created by DB trigger. If we have a session and a phone, also update the profile from the client so the number is definitely saved (trigger may not see meta in some setups).
+      // 2. Profile row is created by DB trigger. If we have a session and a phone, also update the profile from the client as a fallback.
       if (data.user && data.session && phone) {
         await supabase
           .from("profiles")
-          .update({
-            phone: String(phone).trim(),
-            phone_verified: false,
-            updated_at: new Date().toISOString(),
-          })
+          .update({ phone: String(phone).trim() })
           .eq("id", data.user.id);
       }
 
