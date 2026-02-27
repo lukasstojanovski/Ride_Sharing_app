@@ -23,12 +23,23 @@ import { colors, typography, spacing, radius } from "@/constants/theme";
 export default function RegisterScreen() {
   const { t, toggleLanguage, language } = useI18n();
 
-  // Passed from email-signup.tsx
-  const { email, password, phone } = useLocalSearchParams<{
+  // Passed from email-signup → add-phone → register (phone may be URI-encoded to preserve "+")
+  const params = useLocalSearchParams<{
     email: string;
     password: string;
     phone?: string;
   }>();
+  const email = params.email;
+  const password = params.password;
+  const phone = params.phone
+    ? (() => {
+        try {
+          return decodeURIComponent(params.phone!);
+        } catch {
+          return params.phone!;
+        }
+      })()
+    : undefined;
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -71,7 +82,18 @@ export default function RegisterScreen() {
 
       if (signUpError) throw signUpError;
 
-      // 2. Profile row is created by DB trigger; we don't write from client to avoid RLS when session isn't set yet (e.g. if email confirmation is on)
+      // 2. Profile row is created by DB trigger. If we have a session and a phone, also update the profile from the client so the number is definitely saved (trigger may not see meta in some setups).
+      if (data.user && data.session && phone) {
+        await supabase
+          .from("profiles")
+          .update({
+            phone: String(phone).trim(),
+            phone_verified: false,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", data.user.id);
+      }
+
       router.replace("/signup-success");
     } catch (err: any) {
       setErrors({ general: err.message || t.error });

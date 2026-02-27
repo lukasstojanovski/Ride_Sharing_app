@@ -62,9 +62,14 @@ export default function AddPhoneScreen() {
     }
     setError("");
     if (signupFlow) {
+      // Encode phone so "+" is not lost in URL params
       router.push({
         pathname: "/auth/register",
-        params: { email: email!, password: password!, phone: fullPhone },
+        params: {
+          email: email!,
+          password: password!,
+          phone: encodeURIComponent(fullPhone),
+        },
       });
       return;
     }
