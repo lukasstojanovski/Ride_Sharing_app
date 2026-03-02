@@ -4,16 +4,21 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Button, Input } from "@/components/AuthComponents";
-import { colors, typography, spacing } from "@/constants/theme";
+import { Button, Input, DatePickerInput } from "@/components/AuthComponents";
+import { AppHeader } from "@/components/AppHeader";
+import { LangToggle } from "@/components/AuthComponents";
+import { useI18n } from "@/lib/i18n";
+import { colors, typography, spacing, radius } from "@/constants/theme";
 
 export default function OfferRideScreen() {
+  const { t, toggleLanguage, language } = useI18n();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [date, setDate] = useState("");
@@ -28,13 +33,13 @@ export default function OfferRideScreen() {
 
   const handlePublish = async () => {
     const f = from.trim();
-    const t = to.trim();
+    const t_val = to.trim();
     const d = date.trim();
     const tm = time.trim();
     const s = parseInt(seats, 10);
     const p = parseFloat(price.replace(",", "."));
-    if (!f || !t || !d || !tm || !seats || !price) {
-      setError("Please fill From, To, Date, Time, Seats and Price.");
+    if (!f || !t_val || !d || !tm || !seats || !price) {
+      setError(t.offer.fillRequired);
       return;
     }
     if (isNaN(s) || s < 1) {
@@ -61,7 +66,7 @@ export default function OfferRideScreen() {
     const { error: e } = await supabase.from("trips").insert({
       creator_id: user.id,
       from_city: f,
-      to_city: t,
+      to_city: t_val,
       departure_time: departureTime,
       seats_total: s,
       seats_available: s,
@@ -83,110 +88,131 @@ export default function OfferRideScreen() {
 
   if (success) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.successText}>Trip published!</Text>
-        <Text style={styles.successSub}>Taking you to My Trips…</Text>
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+        <View style={styles.centered}>
+          <Text style={styles.successText}>{t.offer.success}</Text>
+          <Text style={styles.successSub}>{t.offer.successSub}</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Text style={styles.title}>Offer a ride</Text>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <AppHeader rightElement={<LangToggle language={language} onToggle={toggleLanguage} />} />
 
-        <Input
-          label="From"
-          value={from}
-          onChangeText={setFrom}
-          placeholder="City"
-          autoCapitalize="words"
-        />
-        <Input
-          label="To"
-          value={to}
-          onChangeText={setTo}
-          placeholder="City"
-          autoCapitalize="words"
-        />
-        <Input
-          label="Date"
-          value={date}
-          onChangeText={setDate}
-          placeholder="YYYY-MM-DD"
-        />
-        <Input
-          label="Time"
-          value={time}
-          onChangeText={setTime}
-          placeholder="HH:mm (24h)"
-        />
-        <Input
-          label="Seats"
-          value={seats}
-          onChangeText={(v) => setSeats(v.replace(/\D/g, ""))}
-          placeholder="2"
-          keyboardType="number-pad"
-        />
-        <Input
-          label="Price (per seat, den)"
-          value={price}
-          onChangeText={(v) => setPrice(v.replace(/[^0-9,.]/g, ""))}
-          placeholder="350"
-          keyboardType="decimal-pad"
-        />
-        <Input
-          label="Pickup note (optional)"
-          value={pickupNote}
-          onChangeText={setPickupNote}
-          placeholder="Where to meet"
-          multiline
-        />
-        <Input
-          label="Dropoff note (optional)"
-          value={dropoffNote}
-          onChangeText={setDropoffNote}
-          placeholder="Drop-off point"
-          multiline
-        />
+          <Text style={styles.title}>{t.offer.title}</Text>
 
-        {error ? (
-          <Text style={styles.errorText}>{error}</Text>
-        ) : null}
+          <View style={styles.formCard}>
+            <Input
+              label={t.offer.from}
+              value={from}
+              onChangeText={setFrom}
+              placeholder="Скопје"
+              autoCapitalize="words"
+            />
+            <Input
+              label={t.offer.to}
+              value={to}
+              onChangeText={setTo}
+              placeholder="Охрид"
+              autoCapitalize="words"
+            />
+            <DatePickerInput
+              label={t.offer.date}
+              value={date}
+              onChange={setDate}
+              placeholder={t.offer.datePlaceholder}
+            />
+            <Input
+              label={t.offer.time}
+              value={time}
+              onChangeText={setTime}
+              placeholder="HH:mm (24h)"
+            />
+            <Input
+              label={t.offer.seats}
+              value={seats}
+              onChangeText={(v) => setSeats(v.replace(/\D/g, ""))}
+              placeholder="2"
+              keyboardType="number-pad"
+            />
+            <Input
+              label={t.offer.price}
+              value={price}
+              onChangeText={(v) => setPrice(v.replace(/[^0-9,.]/g, ""))}
+              placeholder="350"
+              keyboardType="decimal-pad"
+            />
+            <Input
+              label={t.offer.pickupNote}
+              value={pickupNote}
+              onChangeText={setPickupNote}
+              placeholder="Where to meet"
+              multiline
+            />
+            <Input
+              label={t.offer.dropoffNote}
+              value={dropoffNote}
+              onChangeText={setDropoffNote}
+              placeholder="Drop-off point"
+              multiline
+            />
 
-        <Button
-          label="Publish"
-          onPress={handlePublish}
-          loading={loading}
-          disabled={loading}
-          style={styles.btn}
-        />
-      </ScrollView>
-    </KeyboardAvoidingView>
+            {error ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : null}
+
+            <Button
+              label={t.offer.publish}
+              onPress={handlePublish}
+              loading={loading}
+              disabled={loading}
+              style={styles.btn}
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.xl, paddingBottom: spacing["3xl"] },
+  safe: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
+  content: { paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
   title: {
     fontSize: typography.sizes["2xl"],
     fontWeight: typography.weights.extrabold,
     color: colors.text,
     marginBottom: spacing.xl,
+    letterSpacing: -0.5,
+  },
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.base,
   },
   errorText: {
     color: colors.error,
     fontSize: typography.sizes.sm,
-    marginBottom: spacing.md,
+    marginTop: spacing.xs,
   },
-  btn: { marginTop: spacing.md },
+  btn: { marginTop: spacing.sm },
   centered: {
     flex: 1,
     justifyContent: "center",

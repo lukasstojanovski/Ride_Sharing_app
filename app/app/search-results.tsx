@@ -6,9 +6,13 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { AppHeader } from "@/components/AppHeader";
+import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
 
 type TripRow = {
@@ -23,6 +27,7 @@ type TripRow = {
 };
 
 export default function SearchResultsScreen() {
+  const { t } = useI18n();
   const { from, to, date, seats } = useLocalSearchParams<{
     from: string;
     to: string;
@@ -80,40 +85,46 @@ export default function SearchResultsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.centeredText}>Loading trips…</Text>
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.centeredText}>{t.search.loading}</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.link}>Go back</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.link}>{t.search.goBack}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title} numberOfLines={1}>
-          {from} → {to}
-        </Text>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <View style={styles.headerWrap}>
+        <AppHeader
+          showBack
+          onBack={() => router.back()}
+          title={`${from} → ${to}`}
+        />
       </View>
 
       {trips.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.empty}>No trips found</Text>
+          <Text style={styles.empty}>{t.search.noTrips}</Text>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.link}>Change search</Text>
+            <Text style={styles.link}>{t.search.changeSearch}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -135,23 +146,24 @@ export default function SearchResultsScreen() {
               </Text>
               <View style={styles.cardRow}>
                 <Text style={styles.cardMeta}>
-                  {item.seats_available} seat(s) left
+                  {item.seats_available} {t.search.seatsLeft}
                 </Text>
                 <Text style={styles.cardPrice}>{item.price} den</Text>
               </View>
               <Text style={styles.cardDriver}>
-                Driver: {item.profiles?.full_name ?? "—"}
+                {t.search.driver}: {item.profiles?.full_name ?? "—"}
               </Text>
             </TouchableOpacity>
           )}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: colors.background },
+  headerWrap: { paddingHorizontal: spacing.xl },
   centered: {
     flex: 1,
     justifyContent: "center",
@@ -164,26 +176,6 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.base,
     color: colors.primary,
     fontWeight: typography.weights.semibold,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.md,
-  },
-  back: {
-    fontSize: typography.sizes.base,
-    color: colors.primary,
-    fontWeight: typography.weights.semibold,
-  },
-  title: {
-    flex: 1,
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
   },
   list: { padding: spacing.xl, paddingBottom: spacing["3xl"] },
   card: {

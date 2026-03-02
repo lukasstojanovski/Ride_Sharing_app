@@ -33,6 +33,8 @@ You can start developing by editing the files inside the **app** directory. This
 - **Auth testing:** See [docs/AUTH_TESTING.md](docs/AUTH_TESTING.md) for manual test cases.
 - **Phase 1 (rides):** Run `supabase/migrations/002_trips_and_reservations.sql` in the SQL Editor to create the `trips` and `reservations` tables and the `accept_reservation` RPC.
 - **Phase 2 (UI):** Run `supabase/migrations/003_phase2_rls.sql` so the app can show driver/passenger names and let trip creators decline reservations.
+- **Phase 3 (trust):** Run `supabase/migrations/004_phase3_trust.sql` for cancellations (RPCs), notifications table + triggers, reports, and user_blocks. `phone_verified` is ready for Twilio later.
+- **Phase 3 (push):** Run `supabase/migrations/005_push_tokens.sql`, deploy the `send-push-notification` Edge Function, and set up the database webhook. See [docs/PUSH_SETUP.md](docs/PUSH_SETUP.md) for step-by-step instructions.
 
 ## Get a fresh project
 

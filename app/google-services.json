@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "151002000949",
+    "project_id": "ride-sharing-app-c1822",
+    "storage_bucket": "ride-sharing-app-c1822.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:151002000949:android:8faa6d1a0b113dffaf4b7c",
+        "android_client_info": {
+          "package_name": "webwealth.ajdego"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoQZQL47UTWN-1Lg6gDFahP23pcHU2YCg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

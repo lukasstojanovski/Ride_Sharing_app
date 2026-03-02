@@ -7,10 +7,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/AuthComponents";
+import { AppHeader } from "@/components/AppHeader";
+import { LangToggle } from "@/components/AuthComponents";
+import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius } from "@/constants/theme";
 
 type Trip = {
@@ -41,6 +46,7 @@ type ReservationWithPassenger = {
 };
 
 export default function MyTripsScreen() {
+  const { t, toggleLanguage, language } = useI18n();
   const [activeTab, setActiveTab] = useState<"driving" | "riding">("driving");
   const [myTrips, setMyTrips] = useState<Trip[]>([]);
   const [reservationsByTrip, setReservationsByTrip] = useState<
@@ -141,13 +147,36 @@ export default function MyTripsScreen() {
   const handleCancelTrip = async (tripId: string) => {
     setActionLoading(tripId);
     setError(null);
-    const { error: e } = await supabase
-      .from("trips")
-      .update({ status: "cancelled", updated_at: new Date().toISOString() })
-      .eq("id", tripId);
+    const { data, error: e } = await supabase.rpc("cancel_trip", {
+      trip_id: tripId,
+    });
     setActionLoading(null);
     if (e) {
       setError(e.message);
+      return;
+    }
+    const result = data as { ok?: boolean; message?: string };
+    if (!result?.ok) {
+      setError(result?.message ?? "Failed to cancel trip");
+      return;
+    }
+    await load();
+  };
+
+  const handleCancelReservation = async (reservationId: string) => {
+    setActionLoading(reservationId);
+    setError(null);
+    const { data, error: e } = await supabase.rpc("cancel_reservation", {
+      reservation_id: reservationId,
+    });
+    setActionLoading(null);
+    if (e) {
+      setError(e.message);
+      return;
+    }
+    const result = data as { ok?: boolean; message?: string };
+    if (!result?.ok) {
+      setError(result?.message ?? "Failed to cancel reservation");
       return;
     }
     await load();
@@ -166,15 +195,23 @@ export default function MyTripsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.tabs}>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <View style={styles.headerWrap}>
+        <AppHeader rightElement={<LangToggle language={language} onToggle={toggleLanguage} />} />
+      </View>
+      <View style={styles.container}>
+        <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === "driving" && styles.tabActive]}
           onPress={() => setActiveTab("driving")}
@@ -185,7 +222,7 @@ export default function MyTripsScreen() {
               activeTab === "driving" && styles.tabTextActive,
             ]}
           >
-            I'm driving
+            {t.myTrips.driving}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -198,7 +235,7 @@ export default function MyTripsScreen() {
               activeTab === "riding" && styles.tabTextActive,
             ]}
           >
-            I'm riding
+            {t.myTrips.riding}
           </Text>
         </TouchableOpacity>
       </View>
@@ -219,7 +256,7 @@ export default function MyTripsScreen() {
         {activeTab === "driving" && (
           <>
             {myTrips.length === 0 ? (
-              <Text style={styles.empty}>No trips offered yet.</Text>
+              <Text style={styles.empty}>{t.myTrips.noTrips}</Text>
             ) : (
               myTrips.map((trip) => (
                 <View key={trip.id} style={styles.card}>
@@ -235,7 +272,7 @@ export default function MyTripsScreen() {
                   </Text>
                   {(reservationsByTrip[trip.id] || []).length > 0 && (
                     <View style={styles.resList}>
-                      <Text style={styles.resTitle}>Requests</Text>
+                      <Text style={styles.resTitle}>{t.myTrips.requests}</Text>
                       {(reservationsByTrip[trip.id] || []).map((res) => (
                         <View key={res.id} style={styles.resRow}>
                           <Text style={styles.resText}>
@@ -245,14 +282,14 @@ export default function MyTripsScreen() {
                           {res.status === "pending" && trip.status === "active" && (
                             <View style={styles.resActions}>
                               <Button
-                                label="Accept"
+                                label={t.myTrips.accept}
                                 onPress={() => handleAccept(res.id)}
                                 loading={actionLoading === res.id}
                                 disabled={!!actionLoading}
                                 style={styles.resBtn}
                               />
                               <Button
-                                label="Decline"
+                                label={t.myTrips.decline}
                                 variant="outline"
                                 onPress={() => handleDecline(res.id)}
                                 loading={actionLoading === res.id}
@@ -267,7 +304,7 @@ export default function MyTripsScreen() {
                   )}
                   {trip.status === "active" && (
                     <Button
-                      label="Cancel trip"
+                      label={t.myTrips.cancelTrip}
                       variant="outline"
                       onPress={() => handleCancelTrip(trip.id)}
                       loading={actionLoading === trip.id}
@@ -284,35 +321,48 @@ export default function MyTripsScreen() {
         {activeTab === "riding" && (
           <>
             {myReservations.length === 0 ? (
-              <Text style={styles.empty}>No bookings yet.</Text>
+              <Text style={styles.empty}>{t.myTrips.noBookings}</Text>
             ) : (
               myReservations.map((res) => (
-                <TouchableOpacity
-                  key={res.id}
-                  style={styles.card}
-                  onPress={() => router.push(`/trip/${res.trip_id}`)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.cardRoute}>
-                    {res.trips.from_city} → {res.trips.to_city}
-                  </Text>
-                  <Text style={styles.cardDate}>{formatDate(res.trips.departure_time)}</Text>
-                  <Text style={styles.cardMeta}>
-                    Driver: {res.trips.profiles?.full_name ?? "—"} · {res.seats_requested} seat(s)
-                  </Text>
-                  <Text style={styles.cardStatus}>{res.status}</Text>
-                </TouchableOpacity>
+                <View key={res.id} style={styles.card}>
+                  <TouchableOpacity
+                    onPress={() => router.push(`/trip/${res.trip_id}`)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.cardRoute}>
+                      {res.trips.from_city} → {res.trips.to_city}
+                    </Text>
+                    <Text style={styles.cardDate}>{formatDate(res.trips.departure_time)}</Text>
+                    <Text style={styles.cardMeta}>
+                      Driver: {res.trips.profiles?.full_name ?? "—"} · {res.seats_requested} seat(s)
+                    </Text>
+                    <Text style={styles.cardStatus}>{res.status}</Text>
+                  </TouchableOpacity>
+                  {(res.status === "pending" || res.status === "accepted") && (
+                    <Button
+                      label={t.myTrips.cancelReservation}
+                      variant="outline"
+                      onPress={() => handleCancelReservation(res.id)}
+                      loading={actionLoading === res.id}
+                      disabled={!!actionLoading}
+                      style={styles.cancelResBtn}
+                    />
+                  )}
+                </View>
               ))
             )}
           </>
         )}
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: colors.background },
+  headerWrap: { paddingHorizontal: spacing.xl },
+  container: { flex: 1 },
   centered: {
     flex: 1,
     justifyContent: "center",
@@ -323,6 +373,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     paddingHorizontal: spacing.xl,
+    marginBottom: spacing.lg,
   },
   tab: {
     paddingVertical: spacing.base,
@@ -408,4 +459,5 @@ const styles = StyleSheet.create({
   },
   resBtn: { flex: 1 },
   cancelBtn: { marginTop: spacing.md },
+  cancelResBtn: { marginTop: spacing.md },
 });

@@ -8,10 +8,14 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/AuthComponents";
+import { AppHeader } from "@/components/AppHeader";
+import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius } from "@/constants/theme";
 
 type Trip = {
@@ -28,6 +32,7 @@ type Trip = {
 };
 
 export default function TripDetailsScreen() {
+  const { t } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,67 +109,72 @@ export default function TripDetailsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error && !trip) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.link}>Go back</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.link}>{t.trip.goBack}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (!trip) return null;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>← Back</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <AppHeader showBack onBack={() => router.back()} />
 
-      <Text style={styles.route}>
+        <Text style={styles.route}>
         {trip.from_city} → {trip.to_city}
       </Text>
       <Text style={styles.dateTime}>{formatDateTime(trip.departure_time)}</Text>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Trip details</Text>
+        <Text style={styles.cardTitle}>{t.trip.tripDetails}</Text>
         <View style={styles.row}>
-          <Text style={styles.label}>Seats available</Text>
+          <Text style={styles.label}>{t.trip.seatsAvailable}</Text>
           <Text style={styles.value}>{trip.seats_available} / {trip.seats_total}</Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>Price (per seat)</Text>
+          <Text style={styles.label}>{t.trip.pricePerSeat}</Text>
           <Text style={styles.value}>{trip.price} den</Text>
         </View>
         {trip.pickup_note ? (
           <View style={styles.row}>
-            <Text style={styles.label}>Pickup note</Text>
+            <Text style={styles.label}>{t.trip.pickupNote}</Text>
             <Text style={styles.value}>{trip.pickup_note}</Text>
           </View>
         ) : null}
         {trip.dropoff_note ? (
           <View style={styles.row}>
-            <Text style={styles.label}>Dropoff note</Text>
+            <Text style={styles.label}>{t.trip.dropoffNote}</Text>
             <Text style={styles.value}>{trip.dropoff_note}</Text>
           </View>
         ) : null}
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Driver</Text>
+        <Text style={styles.cardTitle}>{t.trip.driver}</Text>
         <Text style={styles.driverName}>
           {trip.profiles?.full_name ?? "—"}
         </Text>
@@ -172,16 +182,16 @@ export default function TripDetailsScreen() {
 
       {requestSent ? (
         <View style={styles.sent}>
-          <Text style={styles.sentText}>Request sent. The driver will confirm.</Text>
+          <Text style={styles.sentText}>{t.trip.requestSent}</Text>
         </View>
       ) : trip.seats_available > 0 ? (
         <Button
-          label="Request seats"
+          label={t.trip.requestSeats}
           onPress={() => setSeatsModalVisible(true)}
           style={styles.btn}
         />
       ) : (
-        <Text style={styles.full}>This trip is full.</Text>
+        <Text style={styles.full}>{t.trip.full}</Text>
       )}
 
       {error ? (
@@ -196,7 +206,7 @@ export default function TripDetailsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Number of seats</Text>
+            <Text style={styles.modalTitle}>{t.trip.numSeats}</Text>
             <TextInput
               value={seatsRequested}
               onChangeText={(v) => setSeatsRequested(v.replace(/\D/g, "") || "1")}
@@ -212,7 +222,7 @@ export default function TripDetailsScreen() {
                 style={styles.modalBtn}
               />
               <Button
-                label="Send request"
+                label={t.trip.sendRequest}
                 onPress={handleRequestSeats}
                 loading={requesting}
                 disabled={requesting}
@@ -223,11 +233,13 @@ export default function TripDetailsScreen() {
         </View>
       </Modal>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
   content: { padding: spacing.xl, paddingBottom: spacing["3xl"] },
   centered: {
     flex: 1,
@@ -238,12 +250,6 @@ const styles = StyleSheet.create({
   errorText: { color: colors.error, textAlign: "center" },
   link: {
     marginTop: spacing.md,
-    fontSize: typography.sizes.base,
-    color: colors.primary,
-    fontWeight: typography.weights.semibold,
-  },
-  header: { marginBottom: spacing.lg },
-  back: {
     fontSize: typography.sizes.base,
     color: colors.primary,
     fontWeight: typography.weights.semibold,

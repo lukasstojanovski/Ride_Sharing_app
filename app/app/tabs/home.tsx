@@ -5,18 +5,24 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Button, Input } from "@/components/AuthComponents";
+import { Button, Input, DatePickerInput } from "@/components/AuthComponents";
+import { AppHeader } from "@/components/AppHeader";
+import { LangToggle } from "@/components/AuthComponents";
+import { useI18n } from "@/lib/i18n";
 import {
   getRecentSearches,
   addRecentSearch,
   type RecentSearch,
 } from "@/lib/recentSearches";
-import { colors, typography, spacing, radius } from "@/constants/theme";
+import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
 
 export default function HomeScreen() {
+  const { t, toggleLanguage, language } = useI18n();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [date, setDate] = useState("");
@@ -29,15 +35,15 @@ export default function HomeScreen() {
 
   const handleSearch = async () => {
     const f = from.trim();
-    const t = to.trim();
+    const t_val = to.trim();
     const d = date.trim();
     const s = seats.trim() || "1";
-    if (!f || !t || !d) return;
-    await addRecentSearch({ from: f, to: t, date: d, seats: s });
+    if (!f || !t_val || !d) return;
+    await addRecentSearch({ from: f, to: t_val, date: d, seats: s });
     setRecent(await getRecentSearches());
     router.push({
       pathname: "/search-results",
-      params: { from: f, to: t, date: d, seats: s },
+      params: { from: f, to: t_val, date: d, seats: s },
     });
   };
 
@@ -58,103 +64,166 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Find a ride</Text>
-        <TouchableOpacity onPress={() => router.push("/auth/add-phone")}>
-          <Text style={styles.link}>Add phone</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <AppHeader
+          rightElement={<LangToggle language={language} onToggle={toggleLanguage} />}
+        />
 
-      <Input
-        label="From"
-        value={from}
-        onChangeText={setFrom}
-        placeholder="City"
-        autoCapitalize="words"
-      />
-      <Input
-        label="To"
-        value={to}
-        onChangeText={setTo}
-        placeholder="City"
-        autoCapitalize="words"
-      />
-      <Input
-        label="Date"
-        value={date}
-        onChangeText={setDate}
-        placeholder="YYYY-MM-DD"
-      />
-      <Input
-        label="Seats"
-        value={seats}
-        onChangeText={(v) => setSeats(v.replace(/\D/g, "") || "1")}
-        placeholder="1"
-        keyboardType="number-pad"
-      />
-
-      <Button
-        label="Search"
-        onPress={handleSearch}
-        disabled={!from.trim() || !to.trim() || !date.trim()}
-        style={styles.searchBtn}
-      />
-
-      {recent.length > 0 && (
-        <View style={styles.recent}>
-          <Text style={styles.recentLabel}>Recent searches</Text>
-          {recent.map((r, i) => (
-            <TouchableOpacity
-              key={`${r.from}-${r.to}-${r.date}-${i}`}
-              style={styles.chip}
-              onPress={() => handleRecentPress(r)}
-            >
-              <Text style={styles.chipText}>
-                {r.from} → {r.to} ({r.date})
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {/* Hero card */}
+        <View style={styles.heroCard}>
+          <Text style={styles.heroEmoji}>🗺️</Text>
+          <View style={styles.searchPreview}>
+            <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+            <Text style={styles.previewText}>
+              {from || "Скопје"} → {to || "Охрид"}
+            </Text>
+            <View style={styles.priceBadge}>
+              <Text style={styles.priceText}>350 ден.</Text>
+            </View>
+          </View>
         </View>
-      )}
 
-      <View style={styles.footer}>
-        <TouchableOpacity onPress={handleLogOut}>
-          <Text style={styles.link}>Log out</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <Text style={styles.title}>{t.home.title}</Text>
+
+        <View style={styles.formCard}>
+          <Input
+            label={t.home.from}
+            value={from}
+            onChangeText={setFrom}
+            placeholder="Скопје"
+            autoCapitalize="words"
+          />
+          <Input
+            label={t.home.to}
+            value={to}
+            onChangeText={setTo}
+            placeholder="Охрид"
+            autoCapitalize="words"
+          />
+          <DatePickerInput
+            label={t.home.date}
+            value={date}
+            onChange={setDate}
+            placeholder={t.home.datePlaceholder}
+          />
+          <Input
+            label={t.home.seats}
+            value={seats}
+            onChangeText={(v) => setSeats(v.replace(/\D/g, "") || "1")}
+            placeholder="1"
+            keyboardType="number-pad"
+          />
+
+          <Button
+            label={t.home.search}
+            onPress={handleSearch}
+            disabled={!from.trim() || !to.trim() || !date.trim()}
+            style={styles.searchBtn}
+          />
+        </View>
+
+        {recent.length > 0 && (
+          <View style={styles.recent}>
+            <Text style={styles.recentLabel}>{t.home.recentSearches}</Text>
+            {recent.map((r, i) => (
+              <TouchableOpacity
+                key={`${r.from}-${r.to}-${r.date}-${i}`}
+                style={styles.chip}
+                onPress={() => handleRecentPress(r)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.chipText}>
+                  {r.from} → {r.to} ({r.date})
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.footer}>
+          <TouchableOpacity onPress={handleLogOut} activeOpacity={0.7}>
+            <Text style={styles.footerLink}>{t.home.logOut}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
   content: {
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xl,
     paddingBottom: spacing["3xl"],
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  heroCard: {
+    width: "100%",
+    height: 140,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.xl,
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: spacing.xl,
+    overflow: "hidden",
   },
+  heroEmoji: { fontSize: 56, opacity: 0.2, position: "absolute" },
+  searchPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    ...shadows.md,
+  },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  previewText: {
+    fontSize: typography.sizes.base,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
+  },
+  priceBadge: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.sm,
+    marginLeft: spacing.xs,
+  },
+  priceText: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
+  },
+
   title: {
     fontSize: typography.sizes["2xl"],
     fontWeight: typography.weights.extrabold,
     color: colors.text,
+    marginBottom: spacing.lg,
+    letterSpacing: -0.5,
   },
-  link: {
-    fontSize: typography.sizes.sm,
-    color: colors.primary,
-    fontWeight: typography.weights.semibold,
+
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.base,
   },
-  searchBtn: { marginTop: spacing.lg },
-  recent: { marginTop: spacing["2xl"] },
+  searchBtn: { marginTop: spacing.sm },
+
+  recent: { marginBottom: spacing.xl },
   recentLabel: {
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.semibold,
@@ -172,5 +241,11 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.base,
     color: colors.text,
   },
-  footer: { marginTop: spacing["2xl"] },
+
+  footer: { marginTop: spacing.lg },
+  footerLink: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+    fontWeight: typography.weights.medium,
+  },
 });

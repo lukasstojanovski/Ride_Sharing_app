@@ -3,6 +3,7 @@ import { Slot, useRouter, useSegments } from "expo-router";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { I18nProvider } from "../lib/i18n";
+import { registerPushToken } from "../lib/registerPushToken";
 
 function AuthGate() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -39,6 +40,13 @@ function AuthGate() {
       router.replace("/tabs/home");
     }
   }, [session, segments, router]);
+
+  // Register push token when user is logged in
+  useEffect(() => {
+    if (session?.user?.id) {
+      registerPushToken(session.user.id);
+    }
+  }, [session?.user?.id]);
 
   // Show nothing while checking session (add a splash screen here if you want)
   if (session === undefined) return null;

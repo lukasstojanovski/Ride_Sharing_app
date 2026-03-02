@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -8,7 +8,9 @@ import {
   TextInput,
   TextInputProps,
   ViewStyle,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors, typography, spacing, radius, shadows } from '@/constants/theme';
 
 // ─── Button ───────────────────────────────────────────────────────────────────
@@ -112,6 +114,88 @@ export const Input: React.FC<InputProps> = ({ label, error, style, rightElement,
     {error ? <Text style={styles.errorText}>{error}</Text> : null}
   </View>
 );
+
+// ─── Date Picker Input ────────────────────────────────────────────────────────
+
+function formatDateForDisplay(dateStr: string): string {
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString(undefined, { dateStyle: 'medium' });
+}
+
+function toYMD(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+interface DatePickerInputProps {
+  label?: string;
+  value: string; // YYYY-MM-DD
+  onChange: (value: string) => void;
+  placeholder?: string;
+  error?: string;
+  minimumDate?: Date;
+}
+
+export const DatePickerInput: React.FC<DatePickerInputProps> = ({
+  label,
+  value,
+  onChange,
+  placeholder = 'Select date',
+  error,
+  minimumDate = new Date(),
+}) => {
+  const [show, setShow] = useState(false);
+  const dateValue = value && /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(value + 'T12:00:00')
+    : new Date();
+
+  const handleChange = (_event: unknown, selectedDate?: Date) => {
+    if (Platform.OS === 'android') setShow(false);
+    if (selectedDate) {
+      onChange(toYMD(selectedDate));
+    }
+  };
+
+  const handleOpen = () => setShow(true);
+
+  return (
+    <View style={styles.inputWrapper}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+      <TouchableOpacity
+        onPress={handleOpen}
+        activeOpacity={0.7}
+        style={[styles.inputRow, styles.datePickerTouchable, error ? styles.fieldError : null]}
+      >
+        <Text style={[styles.input, value ? styles.datePickerValue : styles.datePickerPlaceholder]}>
+          {value ? formatDateForDisplay(value) : placeholder}
+        </Text>
+        <Text style={styles.datePickerChevron}>▾</Text>
+      </TouchableOpacity>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {show && (
+        <DateTimePicker
+          value={dateValue}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleChange}
+          minimumDate={minimumDate}
+          themeVariant="light"
+          {...(Platform.OS === 'ios' && { textColor: colors.text })}
+          {...(Platform.OS === 'android' && { accentColor: colors.primary })}
+        />
+      )}
+      {show && Platform.OS === 'ios' && (
+        <TouchableOpacity onPress={() => setShow(false)} style={styles.datePickerDone}>
+          <Text style={styles.datePickerDoneText}>Done</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
 
 // ─── OTP Input ────────────────────────────────────────────────────────────────
 
@@ -236,6 +320,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base,
   },
   input: { flex: 1, fontSize: typography.sizes.base, color: colors.text },
+  datePickerValue: { flex: 1, fontSize: typography.sizes.base, color: colors.text, fontWeight: typography.weights.medium },
+  datePickerPlaceholder: { flex: 1, fontSize: typography.sizes.base, color: colors.textSecondary },
+  datePickerTouchable: { justifyContent: 'space-between' },
+  datePickerChevron: { fontSize: 16, color: colors.textMuted, marginLeft: spacing.sm },
+  datePickerDone: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    alignItems: 'flex-end',
+  },
+  datePickerDoneText: { fontSize: typography.sizes.base, fontWeight: typography.weights.semibold, color: colors.primary },
   inputRight: { marginLeft: spacing.xs },
   fieldError: { borderColor: colors.error, backgroundColor: colors.errorLight },
   errorText: { fontSize: typography.sizes.sm, color: colors.error, marginTop: 4 },

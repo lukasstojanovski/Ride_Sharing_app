@@ -35,9 +35,9 @@ export default function LoginScreen() {
         <View style={styles.header}>
           <View style={styles.logoRow}>
             <View style={styles.logoMark}>
-              <Text style={styles.logoMarkText}>Д</Text>
+              <Text style={styles.logoMarkText}>A</Text>
             </View>
-            <Text style={styles.logoText}>Делица</Text>
+            <Text style={styles.logoText}>AjdeGo</Text>
           </View>
           <LangToggle language={language} onToggle={toggleLanguage} />
         </View>
