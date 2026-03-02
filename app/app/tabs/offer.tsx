@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Button, Input, DatePickerInput } from "@/components/AuthComponents";
+import { Button, Input, DatePickerInput, TimePickerInput } from "@/components/AuthComponents";
 import { AppHeader } from "@/components/AppHeader";
 import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
@@ -52,7 +52,7 @@ export default function OfferRideScreen() {
     }
     const departureTime = `${d}T${tm}:00.000Z`;
     if (Number.isNaN(Date.parse(departureTime))) {
-      setError("Invalid date or time (use YYYY-MM-DD and HH:mm).");
+      setError("Invalid date or time.");
       return;
     }
     setError(null);
@@ -135,11 +135,11 @@ export default function OfferRideScreen() {
               onChange={setDate}
               placeholder={t.offer.datePlaceholder}
             />
-            <Input
+            <TimePickerInput
               label={t.offer.time}
               value={time}
-              onChangeText={setTime}
-              placeholder="HH:mm (24h)"
+              onChange={setTime}
+              placeholder={t.offer.timePlaceholder}
             />
             <Input
               label={t.offer.seats}

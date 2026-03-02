@@ -57,13 +57,19 @@ export default function NotificationsScreen() {
   }, []);
 
   const handlePress = async (n: Notification) => {
+    if (!n.read_at) {
+      await supabase
+        .from("notifications")
+        .update({ read_at: new Date().toISOString() })
+        .eq("id", n.id);
+    }
+    // Seat request notifications: driver goes to My Trips (accept/decline)
+    if (n.type === "reservation_requested") {
+      router.push("/tabs/my-trips");
+      return;
+    }
+    // Other notifications: go to trip details
     if (n.related_trip_id) {
-      if (!n.read_at) {
-        await supabase
-          .from("notifications")
-          .update({ read_at: new Date().toISOString() })
-          .eq("id", n.id);
-      }
       router.push(`/trip/${n.related_trip_id}`);
     }
   };
@@ -116,7 +122,7 @@ export default function NotificationsScreen() {
               style={[styles.card, !n.read_at && styles.cardUnread]}
               onPress={() => handlePress(n)}
               activeOpacity={0.7}
-              disabled={!n.related_trip_id}
+              disabled={n.type !== "reservation_requested" && !n.related_trip_id}
             >
               <Text style={styles.cardTitle}>{n.title}</Text>
               {n.body ? <Text style={styles.cardBody}>{n.body}</Text> : null}

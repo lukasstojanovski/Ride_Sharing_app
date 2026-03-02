@@ -197,6 +197,88 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
   );
 };
 
+// ─── Time Picker Input ────────────────────────────────────────────────────────
+
+function formatTimeForDisplay(timeStr: string): string {
+  if (!timeStr || !/^\d{1,2}:\d{2}$/.test(timeStr)) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  const d = new Date(2000, 0, 1, h, m);
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function toHHMM(d: Date): string {
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+interface TimePickerInputProps {
+  label?: string;
+  value: string; // HH:mm
+  onChange: (value: string) => void;
+  placeholder?: string;
+  error?: string;
+}
+
+export const TimePickerInput: React.FC<TimePickerInputProps> = ({
+  label,
+  value,
+  onChange,
+  placeholder = 'Select time',
+  error,
+}) => {
+  const [show, setShow] = useState(false);
+  const timeValue = value && /^\d{1,2}:\d{2}$/.test(value)
+    ? (() => {
+        const [h, m] = value.split(':').map(Number);
+        return new Date(2000, 0, 1, h, m);
+      })()
+    : new Date();
+
+  const handleChange = (_event: unknown, selectedDate?: Date) => {
+    if (Platform.OS === 'android') setShow(false);
+    if (selectedDate) {
+      onChange(toHHMM(selectedDate));
+    }
+  };
+
+  const handleOpen = () => setShow(true);
+
+  return (
+    <View style={styles.inputWrapper}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+      <TouchableOpacity
+        onPress={handleOpen}
+        activeOpacity={0.7}
+        style={[styles.inputRow, styles.datePickerTouchable, error ? styles.fieldError : null]}
+      >
+        <Text style={[styles.input, value ? styles.datePickerValue : styles.datePickerPlaceholder]}>
+          {value ? formatTimeForDisplay(value) : placeholder}
+        </Text>
+        <Text style={styles.datePickerChevron}>▾</Text>
+      </TouchableOpacity>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {show && (
+        <DateTimePicker
+          value={timeValue}
+          mode="time"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleChange}
+          is24Hour
+          themeVariant="light"
+          {...(Platform.OS === 'ios' && { textColor: colors.text })}
+          {...(Platform.OS === 'android' && { accentColor: colors.primary })}
+        />
+      )}
+      {show && Platform.OS === 'ios' && (
+        <TouchableOpacity onPress={() => setShow(false)} style={styles.datePickerDone}>
+          <Text style={styles.datePickerDoneText}>Done</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
+
 // ─── OTP Input ────────────────────────────────────────────────────────────────
 
 interface OtpInputProps {
