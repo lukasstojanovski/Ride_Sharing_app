@@ -1,24 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Button, Input, DatePickerInput } from "@/components/AuthComponents";
+import { Button, Input, DatePickerInput, CityPickerInput } from "@/components/AuthComponents";
 import { AppHeader } from "@/components/AppHeader";
 import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
-import {
-  getRecentSearches,
-  addRecentSearch,
-  type RecentSearch,
-} from "@/lib/recentSearches";
 import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
 
 export default function HomeScreen() {
@@ -27,34 +22,16 @@ export default function HomeScreen() {
   const [to, setTo] = useState("");
   const [date, setDate] = useState("");
   const [seats, setSeats] = useState("1");
-  const [recent, setRecent] = useState<RecentSearch[]>([]);
 
-  useEffect(() => {
-    getRecentSearches().then(setRecent);
-  }, []);
-
-  const handleSearch = async () => {
+  const handleSearch = () => {
     const f = from.trim();
     const t_val = to.trim();
     const d = date.trim();
     const s = seats.trim() || "1";
     if (!f || !t_val || !d) return;
-    await addRecentSearch({ from: f, to: t_val, date: d, seats: s });
-    setRecent(await getRecentSearches());
     router.push({
       pathname: "/search-results",
       params: { from: f, to: t_val, date: d, seats: s },
-    });
-  };
-
-  const handleRecentPress = (r: RecentSearch) => {
-    setFrom(r.from);
-    setTo(r.to);
-    setDate(r.date);
-    setSeats(r.seats);
-    router.push({
-      pathname: "/search-results",
-      params: { from: r.from, to: r.to, date: r.date, seats: r.seats },
     });
   };
 
@@ -93,19 +70,17 @@ export default function HomeScreen() {
         <Text style={styles.title}>{t.home.title}</Text>
 
         <View style={styles.formCard}>
-          <Input
+          <CityPickerInput
             label={t.home.from}
             value={from}
-            onChangeText={setFrom}
+            onChange={setFrom}
             placeholder="Скопје"
-            autoCapitalize="words"
           />
-          <Input
+          <CityPickerInput
             label={t.home.to}
             value={to}
-            onChangeText={setTo}
+            onChange={setTo}
             placeholder="Охрид"
-            autoCapitalize="words"
           />
           <DatePickerInput
             label={t.home.date}
@@ -128,24 +103,6 @@ export default function HomeScreen() {
             style={styles.searchBtn}
           />
         </View>
-
-        {recent.length > 0 && (
-          <View style={styles.recent}>
-            <Text style={styles.recentLabel}>{t.home.recentSearches}</Text>
-            {recent.map((r, i) => (
-              <TouchableOpacity
-                key={`${r.from}-${r.to}-${r.date}-${i}`}
-                style={styles.chip}
-                onPress={() => handleRecentPress(r)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.chipText}>
-                  {r.from} → {r.to} ({r.date})
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
 
         <View style={styles.footer}>
           <TouchableOpacity onPress={handleLogOut} activeOpacity={0.7}>
@@ -222,25 +179,6 @@ const styles = StyleSheet.create({
     gap: spacing.base,
   },
   searchBtn: { marginTop: spacing.sm },
-
-  recent: { marginBottom: spacing.xl },
-  recentLabel: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  chip: {
-    backgroundColor: colors.surfaceAlt,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.base,
-    borderRadius: radius.md,
-    marginBottom: spacing.xs,
-  },
-  chipText: {
-    fontSize: typography.sizes.base,
-    color: colors.text,
-  },
 
   footer: { marginTop: spacing.lg },
   footerLink: {

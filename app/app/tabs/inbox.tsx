@@ -12,27 +12,25 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { useUnreadNotifications } from "@/lib/UnreadNotificationsContext";
 import { AppHeader } from "@/components/AppHeader";
 import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius } from "@/constants/theme";
 
-type Notification = {
+type Conversation = {
   id: string;
-  type: string;
-  title: string;
-  body: string | null;
-  related_trip_id: string | null;
-  related_reservation_id: string | null;
-  read_at: string | null;
-  created_at: string;
+  trip_id: string;
+  from_city: string;
+  to_city: string;
+  departure_time: string;
+  last_message: string | null;
+  last_message_at: string | null;
+  has_unread: boolean;
 };
 
-export default function NotificationsScreen() {
+export default function InboxScreen() {
   const { t, toggleLanguage, language } = useI18n();
-  const { refresh } = useUnreadNotifications();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -40,50 +38,33 @@ export default function NotificationsScreen() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setLoading(false);
-      setNotifications([]);
+      setConversations([]);
       return;
     }
-    const { data, error } = await supabase
-      .from("notifications")
-      .select("id, type, title, body, related_trip_id, related_reservation_id, read_at, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    setNotifications((data as Notification[]) || []);
+    const { data, error } = await supabase.rpc("get_my_conversations");
+    setConversations((data as Conversation[]) || []);
     setLoading(false);
     setRefreshing(false);
-    refresh();
   };
 
   useEffect(() => {
     load();
   }, []);
 
-  const handlePress = async (n: Notification) => {
-    if (!n.read_at) {
-      await supabase
-        .from("notifications")
-        .update({ read_at: new Date().toISOString() })
-        .eq("id", n.id);
-      refresh();
-    }
-    // Seat request notifications: driver goes to My Trips (accept/decline)
-    if (n.type === "reservation_requested") {
-      router.push("/tabs/my-trips");
-      return;
-    }
-    // Request accepted: passenger goes to My Trips riding tab
-    if (n.type === "reservation_accepted") {
-      router.push("/tabs/my-trips?tab=riding");
-      return;
-    }
-    // Other notifications: go to trip details
-    if (n.related_trip_id) {
-      router.push(`/trip/${n.related_trip_id}`);
-    }
-  };
+  useEffect(() => {
+    const channel = supabase
+      .channel("inbox-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_last_read" }, load)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
-  const formatDate = (iso: string) => {
+  const formatDate = (iso: string | null) => {
+    if (!iso) return "";
     try {
       const d = new Date(iso);
       const now = new Date();
@@ -92,6 +73,14 @@ export default function NotificationsScreen() {
       if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m ${language === "mk" ? "пред" : "ago"}`;
       if (diff < 86400_000) return `${Math.floor(diff / 3600_000)}h ${language === "mk" ? "пред" : "ago"}`;
       return d.toLocaleDateString(undefined, { dateStyle: "short", timeStyle: "short" });
+    } catch {
+      return iso;
+    }
+  };
+
+  const formatDeparture = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleDateString(undefined, { dateStyle: "short" });
     } catch {
       return iso;
     }
@@ -121,25 +110,34 @@ export default function NotificationsScreen() {
       >
         <AppHeader rightElement={<LangToggle language={language} onToggle={toggleLanguage} />} />
 
-        <Text style={styles.title}>{t.notifications.title}</Text>
-        {notifications.length === 0 ? (
-          <Text style={styles.empty}>{t.notifications.empty}</Text>
+        <Text style={styles.title}>{t.inbox.title}</Text>
+        {conversations.length === 0 ? (
+          <Text style={styles.empty}>{t.inbox.empty}</Text>
         ) : (
-          notifications.map((n) => (
+          conversations.map((conv) => (
             <TouchableOpacity
-              key={n.id}
-              style={[styles.card, !n.read_at && styles.cardUnread]}
-              onPress={() => handlePress(n)}
+              key={conv.id}
+              style={styles.card}
+              onPress={() => router.push(`/chat/${conv.id}`)}
               activeOpacity={0.7}
-              disabled={
-                n.type !== "reservation_requested" &&
-                n.type !== "reservation_accepted" &&
-                !n.related_trip_id
-              }
             >
-              <Text style={styles.cardTitle}>{n.title}</Text>
-              {n.body ? <Text style={styles.cardBody}>{n.body}</Text> : null}
-              <Text style={styles.cardDate}>{formatDate(n.created_at)}</Text>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardRoute}>
+                  {conv.from_city} → {conv.to_city}
+                </Text>
+                {conv.has_unread && <View style={styles.unreadDot} />}
+              </View>
+              <Text style={styles.cardDate}>{formatDeparture(conv.departure_time)}</Text>
+              {conv.last_message ? (
+                <Text style={styles.cardPreview} numberOfLines={1}>
+                  {conv.last_message}
+                </Text>
+              ) : null}
+              {(conv.last_message_at || conv.last_message) && (
+                <Text style={styles.cardTime}>
+                  {formatDate(conv.last_message_at)}
+                </Text>
+              )}
             </TouchableOpacity>
           ))
         )}
@@ -178,22 +176,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  cardUnread: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: spacing.xs,
   },
-  cardTitle: {
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+    marginLeft: spacing.sm,
+  },
+  cardRoute: {
+    flex: 1,
     fontSize: typography.sizes.base,
     fontWeight: typography.weights.semibold,
     color: colors.text,
-    marginBottom: spacing.xs,
   },
-  cardBody: {
+  cardDate: {
     fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
-  cardDate: {
+  cardPreview: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  cardTime: {
     fontSize: typography.sizes.xs,
     color: colors.textMuted,
   },

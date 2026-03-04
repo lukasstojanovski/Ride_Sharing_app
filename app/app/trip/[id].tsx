@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  SafeAreaView,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/AuthComponents";
@@ -41,8 +41,9 @@ export default function TripDetailsScreen() {
   const [requestSent, setRequestSent] = useState(false);
   const [seatsModalVisible, setSeatsModalVisible] = useState(false);
   const [seatsRequested, setSeatsRequested] = useState("1");
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchTrip = useCallback(() => {
     if (!id) {
       setLoading(false);
       return;
@@ -65,6 +66,32 @@ export default function TripDetailsScreen() {
       });
   }, [id]);
 
+  useEffect(() => {
+    fetchTrip();
+  }, [fetchTrip]);
+
+  useEffect(() => {
+    if (!id) return;
+    supabase.rpc("get_conversation_for_trip", { p_trip_id: id }).then(({ data }) => {
+      setConversationId((data as string | null) ?? null);
+    });
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`trip-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "trips", filter: `id=eq.${id}` },
+        fetchTrip
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, fetchTrip]);
+
   const formatDateTime = (iso: string) => {
     try {
       const d = new Date(iso);
@@ -86,22 +113,19 @@ export default function TripDetailsScreen() {
       return;
     }
     setRequesting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setRequesting(false);
-      setSeatsModalVisible(false);
-      return;
-    }
-    const { error: e } = await supabase.from("reservations").insert({
-      trip_id: id,
-      passenger_id: user.id,
-      seats_requested: num,
-      status: "pending",
+    const { data, error: e } = await supabase.rpc("create_reservation", {
+      p_trip_id: id,
+      p_seats_requested: num,
     });
     setRequesting(false);
     setSeatsModalVisible(false);
     if (e) {
       setError(e.message);
+      return;
+    }
+    const result = data as { ok?: boolean; message?: string };
+    if (!result?.ok) {
+      setError(result?.message ?? "Failed to create reservation");
       return;
     }
     setRequestSent(true);
@@ -179,6 +203,15 @@ export default function TripDetailsScreen() {
           {trip.profiles?.full_name ?? "—"}
         </Text>
       </View>
+
+      {conversationId ? (
+        <Button
+          label={t.trip.chat}
+          variant="outline"
+          onPress={() => router.push(`/chat/${conversationId}`)}
+          style={styles.chatBtn}
+        />
+      ) : null}
 
       {requestSent ? (
         <View style={styles.sent}>
@@ -287,6 +320,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.semibold,
     color: colors.text,
   },
+  chatBtn: { marginTop: spacing.lg },
   btn: { marginTop: spacing.lg },
   sent: {
     marginTop: spacing.lg,

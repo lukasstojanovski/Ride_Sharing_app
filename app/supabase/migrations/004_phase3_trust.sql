@@ -73,7 +73,8 @@ end;
 $$;
 
 -- ─── RPC: cancel_trip (creator cancels; notifies all passengers, restores seats) ─
-create or replace function public.cancel_trip(trip_id uuid)
+drop function if exists public.cancel_trip(uuid);
+create or replace function public.cancel_trip(p_trip_id uuid)
 returns jsonb
 language plpgsql
 security definer
@@ -86,7 +87,7 @@ begin
   select id, creator_id, from_city, to_city, status, seats_available
   into t_rec
   from public.trips
-  where id = trip_id
+  where id = p_trip_id
   for update;
 
   if not found then
@@ -104,18 +105,18 @@ begin
   -- Cancel trip
   update public.trips
   set status = 'cancelled', updated_at = now()
-  where id = trip_id;
+  where id = p_trip_id;
 
   -- Cancel all reservations (seats are implicitly "restored" by cancelling - trip is gone)
   update public.reservations
   set status = 'cancelled', updated_at = now()
-  where trip_id = trip_id and status in ('pending', 'accepted');
+  where reservations.trip_id = p_trip_id and status in ('pending', 'accepted');
 
   -- Notify each passenger
   for r_rec in
     select r.passenger_id
     from public.reservations r
-    where r.trip_id = trip_id
+    where r.trip_id = p_trip_id
   loop
     insert into public.notifications (user_id, type, title, body, related_trip_id)
     values (
@@ -123,7 +124,7 @@ begin
       'trip_cancelled',
       'Trip cancelled',
       'The trip ' || t_rec.from_city || ' → ' || t_rec.to_city || ' has been cancelled by the driver.',
-      trip_id
+      p_trip_id
     );
   end loop;
 
@@ -155,10 +156,12 @@ create index if not exists idx_notifications_created_at on public.notifications(
 
 alter table public.notifications enable row level security;
 
+drop policy if exists "Users can read own notifications" on public.notifications;
 create policy "Users can read own notifications"
   on public.notifications for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can update own notifications (mark read)" on public.notifications;
 create policy "Users can update own notifications (mark read)"
   on public.notifications for update
   using (auth.uid() = user_id);
@@ -274,6 +277,7 @@ create index if not exists idx_reports_reported_user on public.reports(reported_
 
 alter table public.reports enable row level security;
 
+drop policy if exists "Users can insert own reports" on public.reports;
 create policy "Users can insert own reports"
   on public.reports for insert
   with check (auth.uid() = reporter_id);
@@ -295,6 +299,7 @@ create index if not exists idx_user_blocks_blocked on public.user_blocks(blocked
 
 alter table public.user_blocks enable row level security;
 
+drop policy if exists "Users can manage own blocks" on public.user_blocks;
 create policy "Users can manage own blocks"
   on public.user_blocks for all
   using (auth.uid() = blocker_id)

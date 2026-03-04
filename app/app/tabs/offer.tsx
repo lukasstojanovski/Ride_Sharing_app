@@ -6,12 +6,12 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Button, Input, DatePickerInput, TimePickerInput } from "@/components/AuthComponents";
+import { Button, Input, DatePickerInput, TimePickerInput, CityPickerInput } from "@/components/AuthComponents";
 import { AppHeader } from "@/components/AppHeader";
 import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
@@ -115,19 +115,17 @@ export default function OfferRideScreen() {
           <Text style={styles.title}>{t.offer.title}</Text>
 
           <View style={styles.formCard}>
-            <Input
+            <CityPickerInput
               label={t.offer.from}
               value={from}
-              onChangeText={setFrom}
+              onChange={setFrom}
               placeholder="Скопје"
-              autoCapitalize="words"
             />
-            <Input
+            <CityPickerInput
               label={t.offer.to}
               value={to}
-              onChangeText={setTo}
+              onChange={setTo}
               placeholder="Охрид"
-              autoCapitalize="words"
             />
             <DatePickerInput
               label={t.offer.date}

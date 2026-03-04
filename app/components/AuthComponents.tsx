@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -9,7 +9,11 @@ import {
   TextInputProps,
   ViewStyle,
   Platform,
+  ScrollView,
+  Modal,
+  Keyboard,
 } from 'react-native';
+import { supabase } from '@/lib/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors, typography, spacing, radius, shadows } from '@/constants/theme';
 
@@ -114,6 +118,149 @@ export const Input: React.FC<InputProps> = ({ label, error, style, rightElement,
     {error ? <Text style={styles.errorText}>{error}</Text> : null}
   </View>
 );
+
+// ─── City Picker Input (searchable dropdown, value only from list) ─────────────
+
+interface CityPickerInputProps {
+  label?: string;
+  value: string;
+  onChange: (city: string) => void;
+  placeholder?: string;
+  error?: string;
+}
+
+export const CityPickerInput: React.FC<CityPickerInputProps> = ({
+  label,
+  value,
+  onChange,
+  placeholder = 'Select city',
+  error,
+}) => {
+  const [inputValue, setInputValue] = useState(value);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [cities, setCities] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error: e } = await supabase
+        .from('cities')
+        .select('id, city')
+        .order('city');
+      if (!e && data && Array.isArray(data)) {
+        setCities(data.map((r) => (r.city as string) ?? '').filter(Boolean));
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
+
+  const filtered = useMemo(() => {
+    const q = inputValue.trim().toLowerCase();
+    if (!q) return cities;
+    return cities.filter((c) => c.toLowerCase().includes(q));
+  }, [cities, inputValue]);
+
+  const openDropdown = () => setShowDropdown(true);
+  const closeDropdown = () => setShowDropdown(false);
+
+  const handleChangeText = (text: string) => {
+    setInputValue(text);
+    setShowDropdown(true);
+    if (value) onChange('');
+  };
+
+  const handleSelect = (city: string) => {
+    setInputValue(city);
+    onChange(city);
+    closeDropdown();
+    Keyboard.dismiss();
+  };
+
+  return (
+    <View style={styles.inputWrapper}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+      <TouchableOpacity
+        onPress={loading ? undefined : openDropdown}
+        activeOpacity={0.7}
+        style={[styles.inputRow, styles.cityPickerTouchable, error ? styles.fieldError : null]}
+      >
+        <Text
+          style={[
+            styles.input,
+            inputValue ? styles.datePickerValue : styles.datePickerPlaceholder,
+          ]}
+          numberOfLines={1}
+        >
+          {loading ? 'Loading...' : (inputValue || placeholder)}
+        </Text>
+        {loading ? (
+          <View style={styles.cityPickerLoader}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : (
+          <Text style={styles.datePickerChevron}>▾</Text>
+        )}
+      </TouchableOpacity>
+      {showDropdown && (
+        <Modal
+          visible
+          transparent
+          animationType="fade"
+          onRequestClose={closeDropdown}
+        >
+          <View style={styles.cityModalOverlay}>
+            <TouchableOpacity
+              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
+              activeOpacity={1}
+              onPress={closeDropdown}
+            />
+            <View style={styles.cityModalContent} pointerEvents="box-none">
+              <View style={styles.cityDropdown} pointerEvents="auto">
+                <TextInput
+                  value={inputValue}
+                  onChangeText={handleChangeText}
+                  placeholder={placeholder}
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.cityModalSearch}
+                  autoCapitalize="words"
+                  autoFocus
+                  editable={!loading}
+                />
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  style={styles.cityDropdownScroll}
+                  nestedScrollEnabled
+                >
+                  {filtered.length === 0 ? (
+                    <Text style={styles.cityDropdownEmpty}>
+                      {loading ? 'Loading...' : 'No matching cities'}
+                    </Text>
+                  ) : (
+                    filtered.map((item) => (
+                      <TouchableOpacity
+                        key={item}
+                        style={styles.cityDropdownItem}
+                        onPress={() => handleSelect(item)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.cityDropdownItemText}>{item}</Text>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+    </View>
+  );
+};
 
 // ─── Date Picker Input ────────────────────────────────────────────────────────
 
@@ -415,6 +562,49 @@ const styles = StyleSheet.create({
   inputRight: { marginLeft: spacing.xs },
   fieldError: { borderColor: colors.error, backgroundColor: colors.errorLight },
   errorText: { fontSize: typography.sizes.sm, color: colors.error, marginTop: 4 },
+
+  cityPickerLoader: { marginLeft: spacing.sm, justifyContent: 'center' },
+  cityPickerTouchable: { justifyContent: 'space-between' },
+  cityModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  cityModalContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  cityModalSearch: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    fontSize: typography.sizes.base,
+    color: colors.text,
+  },
+  cityDropdown: {
+    maxHeight: 280,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.background,
+    overflow: 'hidden',
+    ...Platform.select({ ios: shadows.lg, android: { elevation: 8 } }),
+  },
+  cityDropdownScroll: { maxHeight: 280 },
+  cityDropdownEmpty: {
+    padding: spacing.xl,
+    fontSize: typography.sizes.base,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  cityDropdownItem: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  cityDropdownItemText: { fontSize: typography.sizes.base, color: colors.text },
 
   otpRow: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', position: 'relative' },
   otpCell: {

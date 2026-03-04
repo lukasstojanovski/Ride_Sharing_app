@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { user_id, title, body } = payload.record;
+    const { user_id, type, title, body, related_trip_id, related_reservation_id } = payload.record;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -66,6 +66,11 @@ Deno.serve(async (req) => {
         title: title || "RideShare",
         body: body || "",
         sound: "default",
+        data: {
+          type: type || "",
+          related_trip_id: related_trip_id || "",
+          related_reservation_id: related_reservation_id || "",
+        },
       }),
     });
 

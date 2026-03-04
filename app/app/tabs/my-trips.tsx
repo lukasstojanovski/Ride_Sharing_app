@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 import {
   View,
   Text,
@@ -7,9 +8,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
   StatusBar,
+  Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/AuthComponents";
@@ -47,7 +49,14 @@ type ReservationWithPassenger = {
 
 export default function MyTripsScreen() {
   const { t, toggleLanguage, language } = useI18n();
-  const [activeTab, setActiveTab] = useState<"driving" | "riding">("driving");
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const [activeTab, setActiveTab] = useState<"driving" | "riding">(
+    tab === "riding" ? "riding" : "driving"
+  );
+
+  useEffect(() => {
+    if (tab === "riding") setActiveTab("riding");
+  }, [tab]);
   const [myTrips, setMyTrips] = useState<Trip[]>([]);
   const [reservationsByTrip, setReservationsByTrip] = useState<
     Record<string, ReservationWithPassenger[]>
@@ -110,6 +119,17 @@ export default function MyTripsScreen() {
     load();
   }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("my-trips-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, () => load())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const handleAccept = async (reservationId: string) => {
     setActionLoading(reservationId);
     setError(null);
@@ -132,13 +152,17 @@ export default function MyTripsScreen() {
   const handleDecline = async (reservationId: string) => {
     setActionLoading(reservationId);
     setError(null);
-    const { error: e } = await supabase
-      .from("reservations")
-      .update({ status: "declined", updated_at: new Date().toISOString() })
-      .eq("id", reservationId);
+    const { data, error: e } = await supabase.rpc("decline_reservation", {
+      p_reservation_id: reservationId,
+    });
     setActionLoading(null);
     if (e) {
       setError(e.message);
+      return;
+    }
+    const result = data as { ok?: boolean; message?: string };
+    if (!result?.ok) {
+      setError(result?.message ?? "Failed to decline");
       return;
     }
     await load();
@@ -148,7 +172,7 @@ export default function MyTripsScreen() {
     setActionLoading(tripId);
     setError(null);
     const { data, error: e } = await supabase.rpc("cancel_trip", {
-      trip_id: tripId,
+      p_trip_id: tripId,
     });
     setActionLoading(null);
     if (e) {
@@ -162,6 +186,18 @@ export default function MyTripsScreen() {
     }
     await load();
   };
+
+  const handleOpenChat = async (tripId: string) => {
+    const { data, error: e } = await supabase.rpc("get_conversation_for_trip", {
+      p_trip_id: tripId,
+    });
+    if (!e && data) {
+      router.push(`/chat/${data}`);
+    }
+  };
+
+  const hasAcceptedReservation = (tripId: string) =>
+    (reservationsByTrip[tripId] || []).some((r) => r.status === "accepted");
 
   const handleCancelReservation = async (reservationId: string) => {
     setActionLoading(reservationId);
@@ -302,11 +338,28 @@ export default function MyTripsScreen() {
                       ))}
                     </View>
                   )}
+                  {hasAcceptedReservation(trip.id) && (
+                    <Button
+                      label={t.myTrips.chat}
+                      onPress={() => handleOpenChat(trip.id)}
+                      variant="outline"
+                      style={styles.chatBtn}
+                    />
+                  )}
                   {trip.status === "active" && (
                     <Button
                       label={t.myTrips.cancelTrip}
                       variant="outline"
-                      onPress={() => handleCancelTrip(trip.id)}
+                      onPress={() =>
+                        Alert.alert(
+                          t.myTrips.cancelTripConfirm,
+                          t.myTrips.cancelTripMessage,
+                          [
+                            { text: t.common.cancel, style: "cancel" },
+                            { text: t.common.confirm, onPress: () => handleCancelTrip(trip.id) },
+                          ]
+                        )
+                      }
                       loading={actionLoading === trip.id}
                       disabled={!!actionLoading}
                       style={styles.cancelBtn}
@@ -338,11 +391,28 @@ export default function MyTripsScreen() {
                     </Text>
                     <Text style={styles.cardStatus}>{res.status}</Text>
                   </TouchableOpacity>
+                  {res.status === "accepted" && (
+                    <Button
+                      label={t.myTrips.chat}
+                      variant="outline"
+                      onPress={() => handleOpenChat(res.trip_id)}
+                      style={styles.chatBtn}
+                    />
+                  )}
                   {(res.status === "pending" || res.status === "accepted") && (
                     <Button
                       label={t.myTrips.cancelReservation}
                       variant="outline"
-                      onPress={() => handleCancelReservation(res.id)}
+                      onPress={() =>
+                        Alert.alert(
+                          t.myTrips.cancelReservationConfirm,
+                          t.myTrips.cancelReservationMessage,
+                          [
+                            { text: t.common.cancel, style: "cancel" },
+                            { text: t.common.confirm, onPress: () => handleCancelReservation(res.id) },
+                          ]
+                        )
+                      }
                       loading={actionLoading === res.id}
                       disabled={!!actionLoading}
                       style={styles.cancelResBtn}
@@ -458,6 +528,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   resBtn: { flex: 1 },
+  chatBtn: { marginTop: spacing.sm },
   cancelBtn: { marginTop: spacing.md },
   cancelResBtn: { marginTop: spacing.md },
 });

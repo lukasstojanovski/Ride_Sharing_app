@@ -2,6 +2,10 @@ export const translations = {
   en: {
     or: 'or',
     error: 'Something went wrong. Please try again.',
+    common: {
+      cancel: 'Cancel',
+      confirm: 'Confirm',
+    },
 
     welcome: {
       tagline: 'Travel together,\nsave together.',
@@ -95,6 +99,7 @@ export const translations = {
       home: 'Home',
       offer: 'Offer',
       myTrips: 'My Trips',
+      inbox: 'Inbox',
       notifications: 'Notifications',
     },
     home: {
@@ -136,6 +141,21 @@ export const translations = {
       decline: 'Decline',
       cancelTrip: 'Cancel trip',
       cancelReservation: 'Cancel reservation',
+      cancelTripConfirm: 'Cancel trip?',
+      cancelTripMessage: 'This will cancel the trip for all passengers. Are you sure?',
+      cancelReservationConfirm: 'Cancel reservation?',
+      cancelReservationMessage: 'Are you sure you want to cancel this reservation?',
+      chat: 'Chat',
+    },
+    inbox: {
+      title: 'Inbox',
+      empty: 'No conversations yet.',
+      messagesEmpty: 'No messages yet.',
+      startConversation: 'Start the conversation',
+      dateToday: 'Today',
+      dateYesterday: 'Yesterday',
+      send: 'Send',
+      messagePlaceholder: 'Message…',
     },
     notifications: {
       title: 'Notifications',
@@ -152,6 +172,7 @@ export const translations = {
     trip: {
       back: 'Back',
       tripDetails: 'Trip details',
+      chat: 'Chat',
       requestSeats: 'Request seats',
       seatsAvailable: 'Seats available',
       pricePerSeat: 'Price (per seat)',
@@ -169,6 +190,10 @@ export const translations = {
   mk: {
     or: 'или',
     error: 'Нешто тргна наопаку. Обидете се повторно.',
+    common: {
+      cancel: 'Откажи',
+      confirm: 'Потврди',
+    },
 
     welcome: {
       tagline: 'Патувај заедно,\nштеди заедно.',
@@ -262,6 +287,7 @@ export const translations = {
       home: 'Почетна',
       offer: 'Понуди',
       myTrips: 'Мои патувања',
+      inbox: 'Пораки',
       notifications: 'Известувања',
     },
     home: {
@@ -303,6 +329,21 @@ export const translations = {
       decline: 'Одбиј',
       cancelTrip: 'Откажи превоз',
       cancelReservation: 'Откажи резервација',
+      cancelTripConfirm: 'Откажи превоз?',
+      cancelTripMessage: 'Ова ќе го откаже превозот за сите патници. Дали сте сигурни?',
+      cancelReservationConfirm: 'Откажи резервација?',
+      cancelReservationMessage: 'Дали сте сигурни дека сакате да ја откажете оваа резервација?',
+      chat: 'Пораки',
+    },
+    inbox: {
+      title: 'Пораки',
+      empty: 'Нема разговори.',
+      messagesEmpty: 'Нема пораки.',
+      startConversation: 'Започни разговор',
+      dateToday: 'Денес',
+      dateYesterday: 'Вчера',
+      send: 'Испрати',
+      messagePlaceholder: 'Порака…',
     },
     notifications: {
       title: 'Известувања',
@@ -319,6 +360,7 @@ export const translations = {
     trip: {
       back: 'Назад',
       tripDetails: 'Детали за превозот',
+      chat: 'Пораки',
       requestSeats: 'Барај места',
       seatsAvailable: 'Слободни места',
       pricePerSeat: 'Цена (по место)',

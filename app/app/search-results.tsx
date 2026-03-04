@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,9 +6,9 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { AppHeader } from "@/components/AppHeader";
@@ -43,7 +43,7 @@ export default function SearchResultsScreen() {
   const startOfDay = dateStr ? `${dateStr}T00:00:00.000Z` : "";
   const endOfDay = dateStr ? `${dateStr}T23:59:59.999Z` : "";
 
-  useEffect(() => {
+  const fetchTrips = useCallback(() => {
     if (!from || !to || !dateStr) {
       setLoading(false);
       return;
@@ -70,6 +70,20 @@ export default function SearchResultsScreen() {
         setTrips((data as TripRow[]) || []);
       });
   }, [from, to, dateStr, startOfDay, endOfDay, seatsNum]);
+
+  useEffect(() => {
+    fetchTrips();
+  }, [fetchTrips]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("search-results-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, fetchTrips)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchTrips]);
 
   const formatTime = (iso: string) => {
     try {

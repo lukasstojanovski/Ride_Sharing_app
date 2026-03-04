@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import * as Notifications from "expo-notifications";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { I18nProvider } from "../lib/i18n";
+import { UnreadNotificationsProvider } from "../lib/UnreadNotificationsContext";
+import { UnreadInboxProvider } from "../lib/UnreadInboxContext";
 import { registerPushToken } from "../lib/registerPushToken";
 
 function AuthGate() {
@@ -48,10 +51,38 @@ function AuthGate() {
     }
   }, [session?.user?.id]);
 
+  // Handle notification tap: when request accepted, go to My Trips riding tab
+  useEffect(() => {
+    if (!session) return;
+    // Handle tap when app was in background (listener fires)
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as { type?: string } | undefined;
+      if (data?.type === "reservation_accepted") {
+        router.push("/tabs/my-trips?tab=riding");
+      }
+    });
+    // Handle tap when app was closed (check on mount)
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        const data = response.notification.request.content.data as { type?: string } | undefined;
+        if (data?.type === "reservation_accepted") {
+          router.push("/tabs/my-trips?tab=riding");
+        }
+      }
+    });
+    return () => sub.remove();
+  }, [router, session]);
+
   // Show nothing while checking session (add a splash screen here if you want)
   if (session === undefined) return null;
 
-  return <Slot />;
+  return (
+    <UnreadNotificationsProvider>
+      <UnreadInboxProvider>
+        <Slot />
+      </UnreadInboxProvider>
+    </UnreadNotificationsProvider>
+  );
 }
 
 export default function RootLayout() {
