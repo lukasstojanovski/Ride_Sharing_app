@@ -15,6 +15,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
+import { getRecentSearches, addRecentSearch, getUniqueRoutes } from "@/lib/recentSearches";
 
 export default function HomeScreen() {
   const { t, toggleLanguage, language } = useI18n();
@@ -23,6 +24,7 @@ export default function HomeScreen() {
   const [date, setDate] = useState("");
   const [seats, setSeats] = useState("1");
   const [userName, setUserName] = useState<string | null>(null);
+  const [recentRoutes, setRecentRoutes] = useState<{ from: string; to: string }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -40,15 +42,32 @@ export default function HomeScreen() {
     })();
   }, []);
 
-  const handleSearch = () => {
+  useEffect(() => {
+    getRecentSearches().then((list) => setRecentRoutes(getUniqueRoutes(list)));
+  }, []);
+
+  const handleSearch = async () => {
     const f = from.trim();
     const t_val = to.trim();
     const d = date.trim();
     const s = seats.trim() || "1";
     if (!f || !t_val || !d) return;
+    await addRecentSearch({ from: f, to: t_val, date: d, seats: s });
+    setRecentRoutes((prev) => {
+      const rest = prev.filter((r) => r.from !== f || r.to !== t_val);
+      return [{ from: f, to: t_val }, ...rest].slice(0, 10);
+    });
     router.push({
       pathname: "/search-results",
       params: { from: f, to: t_val, date: d, seats: s },
+    });
+  };
+
+  const handleRecentClick = (route: { from: string; to: string }) => {
+    const today = new Date().toISOString().slice(0, 10);
+    router.push({
+      pathname: "/search-results",
+      params: { from: route.from, to: route.to, date: today, seats: "1" },
     });
   };
 
@@ -111,6 +130,24 @@ export default function HomeScreen() {
           />
         </View>
 
+        {recentRoutes.length > 0 ? (
+          <View style={styles.recentSection}>
+            <Text style={styles.recentTitle}>{t.home.recentSearches}</Text>
+            {recentRoutes.map((route, i) => (
+              <TouchableOpacity
+                key={`${route.from}-${route.to}-${i}`}
+                style={styles.recentChip}
+                onPress={() => handleRecentClick(route)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.recentChipText}>
+                  {route.from} → {route.to}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
+
         <View style={styles.footer}>
           <TouchableOpacity onPress={handleLogOut} activeOpacity={0.7}>
             <Text style={styles.footerLink}>{t.home.logOut}</Text>
@@ -153,6 +190,29 @@ const styles = StyleSheet.create({
     ...shadows.md,
   },
   searchBtn: { marginTop: spacing.sm },
+
+  recentSection: {
+    marginBottom: spacing.xl,
+  },
+  recentTitle: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
+  recentChip: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    marginBottom: spacing.sm,
+  },
+  recentChipText: {
+    fontSize: typography.sizes.sm,
+    color: colors.text,
+    fontWeight: typography.weights.medium,
+  },
 
   footer: { marginTop: spacing.lg },
   footerLink: {
