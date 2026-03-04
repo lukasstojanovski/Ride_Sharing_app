@@ -132,6 +132,7 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes["2xl"],
     fontWeight: typography.weights.extrabold,
     color: colors.text,
+    marginTop: spacing.lg,
     marginBottom: spacing.lg,
     letterSpacing: -0.5,
   },
