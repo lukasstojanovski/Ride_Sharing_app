@@ -71,7 +71,7 @@ export default function HomeScreen() {
         />
 
         <Text style={styles.title}>
-          {userName ? `${t.home.welcome}, ${userName}` : t.home.welcome}
+          {userName ? `${t.home.welcome},  ${userName}` : t.home.welcome}
         </Text>
 
         <Text style={styles.findRide}>{t.home.title}</Text>
