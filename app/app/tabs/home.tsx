@@ -14,7 +14,7 @@ import { Button, Input, DatePickerInput, CityPickerInput } from "@/components/Au
 import { AppHeader } from "@/components/AppHeader";
 import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
-import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
+import { colors, typography, spacing, radius } from "@/constants/theme";
 
 export default function HomeScreen() {
   const { t, toggleLanguage, language } = useI18n();
@@ -52,20 +52,6 @@ export default function HomeScreen() {
         <AppHeader
           rightElement={<LangToggle language={language} onToggle={toggleLanguage} />}
         />
-
-        {/* Hero card */}
-        <View style={styles.heroCard}>
-          <Text style={styles.heroEmoji}>🗺️</Text>
-          <View style={styles.searchPreview}>
-            <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-            <Text style={styles.previewText}>
-              {from || "Скопје"} → {to || "Охрид"}
-            </Text>
-            <View style={styles.priceBadge}>
-              <Text style={styles.priceText}>350 ден.</Text>
-            </View>
-          </View>
-        </View>
 
         <Text style={styles.title}>{t.home.title}</Text>
 
@@ -121,46 +107,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing["3xl"],
   },
-  heroCard: {
-    width: "100%",
-    height: 140,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.xl,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.xl,
-    overflow: "hidden",
-  },
-  heroEmoji: { fontSize: 56, opacity: 0.2, position: "absolute" },
-  searchPreview: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    ...shadows.md,
-  },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  previewText: {
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-  },
-  priceBadge: {
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radius.sm,
-    marginLeft: spacing.xs,
-  },
-  priceText: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.bold,
-    color: colors.primary,
-  },
-
   title: {
     fontSize: typography.sizes["2xl"],
     fontWeight: typography.weights.extrabold,

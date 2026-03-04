@@ -50,11 +50,14 @@ export default function OfferRideScreen() {
       setError("Price must be 0 or more.");
       return;
     }
-    const departureTime = `${d}T${tm}:00.000Z`;
-    if (Number.isNaN(Date.parse(departureTime))) {
+    const [year, month, day] = d.split("-").map(Number);
+    const [hour, minute] = tm.split(":").map(Number);
+    const localDate = new Date(year, month - 1, day, hour, minute, 0, 0);
+    if (Number.isNaN(localDate.getTime())) {
       setError("Invalid date or time.");
       return;
     }
+    const departureTime = localDate.toISOString();
     setError(null);
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
