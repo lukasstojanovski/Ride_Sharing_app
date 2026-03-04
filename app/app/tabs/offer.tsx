@@ -21,7 +21,10 @@ export default function OfferRideScreen() {
   const { t, toggleLanguage, language } = useI18n();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [time, setTime] = useState("");
   const [seats, setSeats] = useState("");
   const [price, setPrice] = useState("");

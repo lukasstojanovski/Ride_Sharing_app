@@ -21,7 +21,10 @@ export default function HomeScreen() {
   const { t, toggleLanguage, language } = useI18n();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [seats, setSeats] = useState("1");
   const [userName, setUserName] = useState<string | null>(null);
   const [recentRoutes, setRecentRoutes] = useState<{ from: string; to: string }[]>([]);
