@@ -14,7 +14,7 @@ import { Button, Input, DatePickerInput, CityPickerInput } from "@/components/Au
 import { AppHeader } from "@/components/AppHeader";
 import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
-import { colors, typography, spacing, radius } from "@/constants/theme";
+import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
 
 export default function HomeScreen() {
   const { t, toggleLanguage, language } = useI18n();
@@ -143,13 +143,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   formCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.xl,
     padding: spacing.xl,
     marginBottom: spacing.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
     gap: spacing.base,
+    ...shadows.md,
   },
   searchBtn: { marginTop: spacing.sm },
 
