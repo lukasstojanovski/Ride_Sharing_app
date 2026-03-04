@@ -8,11 +8,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   StatusBar,
   Pressable,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
@@ -44,7 +45,24 @@ export default function ChatScreen() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const listRef = useRef<FlatList>(null);
+  const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow", () =>
+      setKeyboardVisible(true)
+    );
+    const hide = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide", () =>
+      setKeyboardVisible(false)
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  const inputBottomPadding = keyboardVisible ? 0 : insets.bottom;
 
   const title = conversation?.trips
     ? `${conversation.trips.from_city} → ${conversation.trips.to_city}`
@@ -271,7 +289,7 @@ export default function ChatScreen() {
           }
         />
 
-        <View style={styles.inputRow}>
+        <View style={[styles.inputRow, { paddingBottom: inputBottomPadding }]}>
           <TextInput
             style={styles.input}
             value={input}

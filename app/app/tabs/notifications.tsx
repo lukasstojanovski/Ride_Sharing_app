@@ -77,6 +77,11 @@ export default function NotificationsScreen() {
       router.push("/tabs/my-trips?tab=riding");
       return;
     }
+    // Reservation cancelled: go to My Trips
+    if (n.type === "reservation_cancelled") {
+      router.push("/tabs/my-trips");
+      return;
+    }
     // Other notifications: go to trip details
     if (n.related_trip_id) {
       router.push(`/trip/${n.related_trip_id}`);
@@ -134,6 +139,7 @@ export default function NotificationsScreen() {
               disabled={
                 n.type !== "reservation_requested" &&
                 n.type !== "reservation_accepted" &&
+                n.type !== "reservation_cancelled" &&
                 !n.related_trip_id
               }
             >

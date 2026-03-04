@@ -51,23 +51,26 @@ function AuthGate() {
     }
   }, [session?.user?.id]);
 
-  // Handle notification tap: when request accepted, go to My Trips riding tab
+  // Handle notification tap: navigate based on type
   useEffect(() => {
     if (!session) return;
+    const navigateFromNotification = (data: { type?: string } | undefined) => {
+      if (data?.type === "reservation_accepted") {
+        router.push("/tabs/my-trips?tab=riding");
+      } else if (data?.type === "reservation_cancelled") {
+        router.push("/tabs/my-trips");
+      }
+    };
     // Handle tap when app was in background (listener fires)
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as { type?: string } | undefined;
-      if (data?.type === "reservation_accepted") {
-        router.push("/tabs/my-trips?tab=riding");
-      }
+      navigateFromNotification(data);
     });
     // Handle tap when app was closed (check on mount)
     Notifications.getLastNotificationResponseAsync().then((response) => {
       if (response) {
         const data = response.notification.request.content.data as { type?: string } | undefined;
-        if (data?.type === "reservation_accepted") {
-          router.push("/tabs/my-trips?tab=riding");
-        }
+        navigateFromNotification(data);
       }
     });
     return () => sub.remove();
