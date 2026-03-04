@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,23 @@ export default function HomeScreen() {
   const [to, setTo] = useState("");
   const [date, setDate] = useState("");
   const [seats, setSeats] = useState("1");
+  const [userName, setUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name")
+        .eq("id", user.id)
+        .single();
+      if (data) {
+        const first = (data as { first_name?: string | null }).first_name?.trim();
+        setUserName(first || null);
+      }
+    })();
+  }, []);
 
   const handleSearch = () => {
     const f = from.trim();
@@ -53,7 +70,11 @@ export default function HomeScreen() {
           rightElement={<LangToggle language={language} onToggle={toggleLanguage} />}
         />
 
-        <Text style={styles.title}>{t.home.title}</Text>
+        <Text style={styles.title}>
+          {userName ? `${t.home.welcome}, ${userName}` : t.home.welcome}
+        </Text>
+
+        <Text style={styles.findRide}>{t.home.title}</Text>
 
         <View style={styles.formCard}>
           <CityPickerInput
@@ -114,7 +135,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     letterSpacing: -0.5,
   },
-
+  findRide: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
+    marginBottom: spacing.lg,
+  },
   formCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.xl,

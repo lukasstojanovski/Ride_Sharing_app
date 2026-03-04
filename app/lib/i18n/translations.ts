@@ -103,6 +103,7 @@ export const translations = {
       notifications: 'Notifications',
     },
     home: {
+      welcome: 'Welcome',
       title: 'Find a ride',
       addPhone: 'Add phone',
       from: 'From',
@@ -291,6 +292,7 @@ export const translations = {
       notifications: 'Известувања',
     },
     home: {
+      welcome: 'Добредојде',
       title: 'Најди превоз',
       addPhone: 'Додади телефон',
       from: 'Од',
