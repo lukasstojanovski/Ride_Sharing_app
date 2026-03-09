@@ -316,7 +316,7 @@ export default function ChatScreen() {
     const displayName = getSenderDisplayName(run[0]);
     const avatarUri = profile?.avatar_url?.trim() || null;
 
-    const avatarBlock = (
+    const avatarBlock = !isMe ? (
       <View style={styles.avatarWrapBottom}>
         {avatarUri ? (
           <Image source={{ uri: avatarUri }} style={[styles.avatar, { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 }]} />
@@ -326,7 +326,7 @@ export default function ChatScreen() {
           </View>
         )}
       </View>
-    );
+    ) : null;
 
     const bubblesColumn = (
       <View style={isMe ? styles.runBubblesColumnRight : styles.runBubblesColumnLeft}>
@@ -344,7 +344,6 @@ export default function ChatScreen() {
         <View style={[styles.bubbleWrap, styles.bubbleWrapRight]}>
           <View style={styles.runRowRight}>
             {bubblesColumn}
-            {avatarBlock}
           </View>
         </View>
       );
