@@ -159,6 +159,7 @@ export const translations = {
       dateYesterday: 'Yesterday',
       send: 'Send',
       messagePlaceholder: 'Message…',
+      loadOlder: 'Load older messages',
     },
     notifications: {
       title: 'Notifications',
@@ -364,6 +365,7 @@ export const translations = {
       dateYesterday: 'Вчера',
       send: 'Испрати',
       messagePlaceholder: 'Порака…',
+      loadOlder: 'Вчитај постари пораки',
     },
     notifications: {
       title: 'Известувања',

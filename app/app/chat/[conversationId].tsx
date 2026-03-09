@@ -14,6 +14,8 @@ import {
   Pressable,
   Image,
   Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,6 +40,21 @@ type Message = {
   profiles?: SenderProfile | null;
 };
 
+const PAGE_SIZE = 20;
+
+function normalizeMessages(
+  raw: Array<{ id: string; user_id: string; content: string; created_at: string; profiles?: unknown }> | null
+): Message[] {
+  if (!raw || !Array.isArray(raw)) return [];
+  return raw.map((m) => ({
+    id: m.id,
+    user_id: m.user_id,
+    content: m.content,
+    created_at: m.created_at,
+    profiles: Array.isArray(m.profiles) ? (m.profiles[0] ?? null) : m.profiles ?? null,
+  })) as Message[];
+}
+
 type ConversationWithTrip = {
   id: string;
   trip_id: string;
@@ -48,6 +65,7 @@ export default function ChatScreen() {
   const { t } = useI18n();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const { refresh } = useUnreadInbox();
+
   const [conversation, setConversation] = useState<ConversationWithTrip | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -56,7 +74,16 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [hasMoreOlder, setHasMoreOlder] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+
   const listRef = useRef<FlatList>(null);
+  const inputRef = useRef<TextInput>(null);
+  const isUserNearBottomRef = useRef(true);
+  const hasInitiallyScrolledRef = useRef(false);
+  const shouldStickToBottomRef = useRef(true);
+
+  const SCROLL_BOTTOM_THRESHOLD = 100;
   const insets = useSafeAreaInsets();
 
   const getSenderProfile = (m: Message): SenderProfile | null =>
@@ -70,12 +97,15 @@ export default function ChatScreen() {
   };
 
   useEffect(() => {
-    const show = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow", () =>
-      setKeyboardVisible(true)
+    const show = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => setKeyboardVisible(true)
     );
-    const hide = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide", () =>
-      setKeyboardVisible(false)
+    const hide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKeyboardVisible(false)
     );
+
     return () => {
       show.remove();
       hide.remove();
@@ -94,10 +124,19 @@ export default function ChatScreen() {
       return;
     }
 
+    setLoadingOlder(false);
+    setHasMoreOlder(true);
+    isUserNearBottomRef.current = true;
+    shouldStickToBottomRef.current = true;
+    hasInitiallyScrolledRef.current = false;
+
     let mounted = true;
 
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user || !mounted) return;
       setCurrentUserId(user.id);
 
@@ -108,36 +147,58 @@ export default function ChatScreen() {
         .single();
 
       if (!mounted) return;
+
       if (convError || !convData) {
         setLoading(false);
         return;
       }
-      setConversation(convData as ConversationWithTrip);
+
+      const raw = convData as { id: string; trip_id: string; trips: unknown };
+      const tripsObj = Array.isArray(raw.trips) ? (raw.trips[0] ?? null) : raw.trips;
+      setConversation({
+        id: raw.id,
+        trip_id: raw.trip_id,
+        trips: tripsObj as { from_city: string; to_city: string } | null,
+      });
 
       const { data: msgData } = await supabase
         .from("messages")
         .select("id, user_id, content, created_at, profiles!user_id(first_name, full_name, avatar_url)")
         .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
 
       if (mounted) {
-        const list = (msgData as Message[]) || [];
+        const raw = normalizeMessages(msgData as Parameters<typeof normalizeMessages>[0]);
+        const list = [...raw].reverse();
+
         setMessages(list);
+        setHasMoreOlder(raw.length === PAGE_SIZE);
+
         const byUser: Record<string, SenderProfile> = {};
         for (const m of list) {
           if (m.profiles && m.user_id) byUser[m.user_id] = m.profiles;
         }
         setSenderProfiles((prev) => ({ ...prev, ...byUser }));
+
         await supabase.rpc("mark_conversation_read", { p_conversation_id: conversationId });
         refresh();
+
+        requestAnimationFrame(() => {
+          listRef.current?.scrollToEnd({ animated: false });
+          hasInitiallyScrolledRef.current = true;
+          isUserNearBottomRef.current = true;
+          shouldStickToBottomRef.current = true;
+        });
       }
+
       setLoading(false);
     })();
 
     return () => {
       mounted = false;
     };
-  }, [conversationId]);
+  }, [conversationId, refresh]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -154,23 +215,40 @@ export default function ChatScreen() {
         },
         async (payload) => {
           const newMsg = payload.new as Message;
+
           if (!senderProfiles[newMsg.user_id]) {
             const { data: profileRow } = await supabase
               .from("profiles")
               .select("first_name, full_name, avatar_url")
               .eq("id", newMsg.user_id)
               .single();
+
             if (profileRow) {
-              setSenderProfiles((prev) => ({ ...prev, [newMsg.user_id]: profileRow as SenderProfile }));
+              setSenderProfiles((prev) => ({
+                ...prev,
+                [newMsg.user_id]: profileRow as SenderProfile,
+              }));
             }
           }
+
           setMessages((prev) => {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
+
+            return [...prev, newMsg].sort(
+              (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
           });
-          setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+
+          if (isUserNearBottomRef.current || newMsg.user_id === currentUserId) {
+            requestAnimationFrame(() => {
+              listRef.current?.scrollToEnd({ animated: true });
+            });
+          }
+
           if (conversationId) {
-            supabase.rpc("mark_conversation_read", { p_conversation_id: conversationId }).then(() => refresh());
+            supabase
+              .rpc("mark_conversation_read", { p_conversation_id: conversationId })
+              .then(() => refresh());
           }
         }
       )
@@ -179,21 +257,97 @@ export default function ChatScreen() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, currentUserId, refresh, senderProfiles]);
+
+  useEffect(() => {
+    if (!loading && messages.length > 0 && shouldStickToBottomRef.current) {
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToEnd({ animated: false });
+      });
+    }
+  }, [messages.length, loading]);
 
   const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed || !conversationId || !currentUserId || sending) return;
 
+    shouldStickToBottomRef.current = true;
+    isUserNearBottomRef.current = true;
+
     setSending(true);
+
+    const messageToSend = trimmed;
+    setInput("");
+
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      listRef.current?.scrollToEnd({ animated: true });
+    });
+
     const { error } = await supabase.from("messages").insert({
       conversation_id: conversationId,
       user_id: currentUserId,
-      content: trimmed,
+      content: messageToSend,
     });
+
     setSending(false);
-    if (error) return;
-    setInput("");
+
+    if (error) {
+      setInput(messageToSend);
+      requestAnimationFrame(() => inputRef.current?.focus());
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      listRef.current?.scrollToEnd({ animated: true });
+    });
+  };
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    const offsetY = contentOffset.y;
+    const distanceFromBottom = contentSize.height - layoutMeasurement.height - offsetY;
+
+    const nearBottom = distanceFromBottom <= SCROLL_BOTTOM_THRESHOLD;
+    isUserNearBottomRef.current = nearBottom;
+    shouldStickToBottomRef.current = nearBottom;
+
+    if (offsetY < 100 && hasMoreOlder && !loadingOlder) {
+      loadOlderMessages();
+    }
+  };
+
+  const loadOlderMessages = async () => {
+    if (!conversationId || loadingOlder || !hasMoreOlder) return;
+
+    const oldest = messages[0];
+    if (!oldest) return;
+
+    setLoadingOlder(true);
+
+    const { data: olderData } = await supabase
+      .from("messages")
+      .select("id, user_id, content, created_at, profiles!user_id(first_name, full_name, avatar_url)")
+      .eq("conversation_id", conversationId)
+      .lt("created_at", oldest.created_at)
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE);
+
+    const raw = normalizeMessages(olderData as Parameters<typeof normalizeMessages>[0]);
+    const older = [...raw].reverse();
+
+    setMessages((prev) => [...older, ...prev]);
+    setSenderProfiles((prev) => {
+      const next = { ...prev };
+      for (const m of older) {
+        if (m.profiles && m.user_id) next[m.user_id] = m.profiles;
+      }
+      return next;
+    });
+
+    setHasMoreOlder(raw.length === PAGE_SIZE);
+    setLoadingOlder(false);
   };
 
   const formatTime = (iso: string) => {
@@ -221,15 +375,20 @@ export default function ChatScreen() {
       const d = new Date(iso);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
+
       const dMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
       if (dMidnight.getTime() === today.getTime()) return t.inbox.dateToday;
       if (dMidnight.getTime() === yesterday.getTime()) return t.inbox.dateYesterday;
+
       const day = String(d.getDate()).padStart(2, "0");
       const month = String(d.getMonth() + 1).padStart(2, "0");
-      const y = d.getFullYear();
-      return today.getFullYear() !== y ? `${day}/${month}/${y}` : `${day}/${month}`;
+      const year = d.getFullYear();
+
+      return today.getFullYear() !== year ? `${day}/${month}/${year}` : `${day}/${month}`;
     } catch {
       return "";
     }
@@ -238,9 +397,11 @@ export default function ChatScreen() {
   const getDateGroups = () => {
     const groups: { date: string; messages: Message[] }[] = [];
     let lastUtcDate = "";
+
     for (const m of messages) {
       const utcDate = getUtcDateString(m.created_at);
       if (!utcDate) continue;
+
       if (utcDate !== lastUtcDate) {
         groups.push({ date: formatDateLabel(m.created_at), messages: [m] });
         lastUtcDate = utcDate;
@@ -248,42 +409,48 @@ export default function ChatScreen() {
         groups[groups.length - 1].messages.push(m);
       }
     }
+
     const oneDayMs = 24 * 60 * 60 * 1000;
+
     for (let i = groups.length - 1; i >= 1; i--) {
       if (groups[i].messages.length !== 1) continue;
+
       const prevLast = groups[i - 1].messages[groups[i - 1].messages.length - 1];
       const currTime = new Date(groups[i].messages[0].created_at).getTime();
       const prevTime = new Date(prevLast.created_at).getTime();
+
       if (currTime - prevTime <= oneDayMs && currTime - prevTime >= -oneDayMs) {
         groups[i - 1].messages.push(groups[i].messages[0]);
         groups.splice(i, 1);
       }
     }
+
     return groups;
   };
 
   const dateGroups = getDateGroups();
-
   const AVATAR_SIZE = 28;
 
-  /** Group consecutive messages from the same user into runs */
-  const getMessageRuns = (messages: Message[]): Message[][] => {
-    if (messages.length === 0) return [];
+  const getMessageRuns = (groupMessages: Message[]): Message[][] => {
+    if (groupMessages.length === 0) return [];
+
     const runs: Message[][] = [];
-    let run: Message[] = [messages[0]];
-    for (let i = 1; i < messages.length; i++) {
-      if (messages[i].user_id === messages[i - 1].user_id) {
-        run.push(messages[i]);
+    let run: Message[] = [groupMessages[0]];
+
+    for (let i = 1; i < groupMessages.length; i++) {
+      if (groupMessages[i].user_id === groupMessages[i - 1].user_id) {
+        run.push(groupMessages[i]);
       } else {
         runs.push(run);
-        run = [messages[i]];
+        run = [groupMessages[i]];
       }
     }
+
     runs.push(run);
     return runs;
   };
 
-  const renderBubbleWithTime = (m: Message, isMe: boolean, showTime: boolean) => {
+  const renderBubbleWithTime = (m: Message, isMe: boolean, showTime: boolean, idx: number) => {
     const bubbleOnly = (
       <View style={[styles.bubble, isMe ? styles.bubbleSent : styles.bubbleReceived]}>
         <Text style={[styles.bubbleText, isMe && styles.bubbleTextSent]} selectable>
@@ -291,6 +458,7 @@ export default function ChatScreen() {
         </Text>
       </View>
     );
+
     const timeText = showTime ? (
       <Text
         style={[styles.bubbleTime, isMe ? styles.bubbleTimeSent : styles.bubbleTimeReceived]}
@@ -299,8 +467,9 @@ export default function ChatScreen() {
         {formatTime(m.created_at)}
       </Text>
     ) : null;
+
     return (
-      <View key={m.id} style={styles.singleMessageWrap}>
+      <View key={`${m.id}-${idx}`} style={styles.singleMessageWrap}>
         {bubbleOnly}
         {timeText != null && (
           <View style={isMe ? styles.bubbleTimeWrapRight : undefined}>{timeText}</View>
@@ -311,6 +480,7 @@ export default function ChatScreen() {
 
   const renderMessageRun = (run: Message[]) => {
     if (run.length === 0) return null;
+
     const isMe = run[0].user_id === currentUserId;
     const profile = getSenderProfile(run[0]);
     const displayName = getSenderDisplayName(run[0]);
@@ -319,9 +489,28 @@ export default function ChatScreen() {
     const avatarBlock = !isMe ? (
       <View style={styles.avatarWrapBottom}>
         {avatarUri ? (
-          <Image source={{ uri: avatarUri }} style={[styles.avatar, { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 }]} />
+          <Image
+            source={{ uri: avatarUri }}
+            style={[
+              styles.avatar,
+              {
+                width: AVATAR_SIZE,
+                height: AVATAR_SIZE,
+                borderRadius: AVATAR_SIZE / 2,
+              },
+            ]}
+          />
         ) : (
-          <View style={[styles.avatarPlaceholder, { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 }]}>
+          <View
+            style={[
+              styles.avatarPlaceholder,
+              {
+                width: AVATAR_SIZE,
+                height: AVATAR_SIZE,
+                borderRadius: AVATAR_SIZE / 2,
+              },
+            ]}
+          >
             <Ionicons name="person" size={14} color={colors.textMuted} />
           </View>
         )}
@@ -335,16 +524,15 @@ export default function ChatScreen() {
             <Text style={styles.senderName}>{displayName}</Text>
           </View>
         )}
-        {run.map((m, i) => renderBubbleWithTime(m, isMe, i === run.length - 1))}
+
+        {run.map((m, i) => renderBubbleWithTime(m, isMe, i === run.length - 1, i))}
       </View>
     );
 
     if (isMe) {
       return (
         <View style={[styles.bubbleWrap, styles.bubbleWrapRight]}>
-          <View style={styles.runRowRight}>
-            {bubblesColumn}
-          </View>
+          <View style={styles.runRowRight}>{bubblesColumn}</View>
         </View>
       );
     }
@@ -367,11 +555,12 @@ export default function ChatScreen() {
 
   const renderSection = ({ item }: { item: { date: string; messages: Message[] } }) => {
     const runs = getMessageRuns(item.messages);
+
     return (
       <View>
         {renderDateSeparator(item.date)}
-        {runs.map((run) => (
-          <View key={run[0].id}>{renderMessageRun(run)}</View>
+        {runs.map((run, ri) => (
+          <View key={`${item.date}-${ri}-${run[0].id}`}>{renderMessageRun(run)}</View>
         ))}
       </View>
     );
@@ -405,6 +594,7 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -420,8 +610,31 @@ export default function ChatScreen() {
           keyExtractor={(s) => s.date + (s.messages[0]?.id ?? "")}
           renderItem={renderSection}
           contentContainerStyle={styles.listContent}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+          onContentSizeChange={() => {
+            if (shouldStickToBottomRef.current || !hasInitiallyScrolledRef.current) {
+              listRef.current?.scrollToEnd({ animated: false });
+              hasInitiallyScrolledRef.current = true;
+            }
+          }}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="always"
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            hasMoreOlder ? (
+              <TouchableOpacity
+                style={styles.loadOlderRow}
+                onPress={loadOlderMessages}
+                disabled={loadingOlder}
+              >
+                {loadingOlder ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={styles.loadOlderText}>{t.inbox.loadOlder}</Text>
+                )}
+              </TouchableOpacity>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
               <View style={styles.emptyIconWrap}>
@@ -435,21 +648,28 @@ export default function ChatScreen() {
 
         <View style={[styles.inputRow, { paddingBottom: inputBottomPadding }]}>
           <TextInput
+            ref={inputRef}
             style={styles.input}
+            blurOnSubmit={false}
+            submitBehavior="submit"
             value={input}
             onChangeText={setInput}
+            onSubmitEditing={handleSend}
             placeholder={t.inbox.messagePlaceholder}
             placeholderTextColor={colors.textMuted}
             multiline
             maxLength={1000}
             editable={!sending}
+            returnKeyType="send"
           />
+
           <Pressable
             style={({ pressed }) => [
               styles.sendBtn,
               (!input.trim() || sending) && styles.sendBtnDisabled,
               pressed && styles.sendBtnPressed,
             ]}
+            onPressIn={() => inputRef.current?.focus()}
             onPress={handleSend}
             disabled={!input.trim() || sending}
           >
@@ -470,8 +690,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: spacing.xl,
   },
-  errorText: { color: colors.textSecondary, marginBottom: spacing.md },
-  link: { fontSize: typography.sizes.base, color: colors.primary, fontWeight: typography.weights.semibold },
+  errorText: {
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  link: {
+    fontSize: typography.sizes.base,
+    color: colors.primary,
+    fontWeight: typography.weights.semibold,
+  },
   headerWrap: {
     paddingHorizontal: spacing.xl,
   },
@@ -522,6 +749,16 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontWeight: typography.weights.medium,
   },
+  loadOlderRow: {
+    paddingVertical: spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadOlderText: {
+    fontSize: typography.sizes.sm,
+    color: colors.primary,
+    fontWeight: typography.weights.semibold,
+  },
   bubbleWrap: {
     marginBottom: spacing.sm,
     alignItems: "flex-start",
@@ -531,16 +768,6 @@ const styles = StyleSheet.create({
   },
   bubbleWrapRight: {
     alignItems: "flex-end",
-  },
-  bubbleRowLeft: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    maxWidth: "85%",
-  },
-  bubbleRowRight: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    maxWidth: "85%",
   },
   runRowLeft: {
     flexDirection: "row",
@@ -568,14 +795,6 @@ const styles = StyleSheet.create({
   avatarWrapBottom: {
     alignSelf: "flex-end",
   },
-  bubbleColumn: {
-    marginLeft: spacing.xs,
-    maxWidth: "78%",
-  },
-  bubbleColumnRight: {
-    marginRight: spacing.xs,
-    maxWidth: "78%",
-  },
   senderNameRow: {
     height: 14,
     justifyContent: "flex-end",
@@ -584,9 +803,6 @@ const styles = StyleSheet.create({
   senderName: {
     fontSize: typography.sizes.xs,
     color: colors.textMuted,
-  },
-  avatarWrap: {
-    alignSelf: "flex-end",
   },
   avatar: {
     backgroundColor: colors.surfaceAlt,
@@ -644,6 +860,7 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
+    backgroundColor: colors.surface,
   },
   input: {
     flex: 1,
