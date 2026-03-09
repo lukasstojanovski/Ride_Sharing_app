@@ -50,6 +50,13 @@ export default function RegisterScreen() {
     general?: string;
   }>({});
 
+  const capitalizeName = (str: string) =>
+    str
+      .split(/\s+/)
+      .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : word))
+      .join(" ")
+      .trim();
+
   const validate = () => {
     const e: typeof errors = {};
     if (!firstName.trim()) e.firstName = t.register.firstNameRequired;
@@ -66,15 +73,18 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
+      const first = capitalizeName(firstName.trim());
+      const last = capitalizeName(lastName.trim());
+      const fullName = [first, last].filter(Boolean).join(" ").trim();
       // 1. Create the auth user; trigger on auth.users creates the profile row (no client write = no RLS issue)
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+            first_name: first,
+            last_name: last,
+            full_name: fullName || undefined,
             phone: phone || null,
           },
         },

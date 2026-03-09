@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -12,10 +12,11 @@ import {
   ScrollView,
   Modal,
   Keyboard,
+  Animated,
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { colors, typography, spacing, radius, shadows } from '@/constants/theme';
+import { colors, typography, spacing, radius, shadows, MAX_SEATS } from '@/constants/theme';
 
 // ─── Button ───────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,45 @@ export const Button: React.FC<ButtonProps> = ({
         </>
       )}
     </TouchableOpacity>
+  );
+};
+
+// ─── Seats Stepper (1 to MAX_SEATS) ───────────────────────────────────────────
+
+interface SeatsStepperProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  error?: string;
+}
+
+export const SeatsStepper: React.FC<SeatsStepperProps> = ({ label, value, onChange, error }) => {
+  const min = 1;
+  const max = MAX_SEATS;
+  return (
+    <View style={styles.inputWrapper}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+      <View style={[styles.seatsStepperRow, error ? styles.fieldError : null]}>
+        <TouchableOpacity
+          onPress={() => onChange(Math.max(min, value - 1))}
+          disabled={value <= min}
+          style={styles.seatsStepperBtn}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.seatsStepperArrow, value <= min && styles.seatsStepperArrowDisabled]}>−</Text>
+        </TouchableOpacity>
+        <Text style={styles.seatsStepperValue}>{value}</Text>
+        <TouchableOpacity
+          onPress={() => onChange(Math.min(max, value + 1))}
+          disabled={value >= max}
+          style={styles.seatsStepperBtn}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.seatsStepperArrow, value >= max && styles.seatsStepperArrowDisabled]}>+</Text>
+        </TouchableOpacity>
+      </View>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+    </View>
   );
 };
 
@@ -268,7 +308,9 @@ function formatDateForDisplay(dateStr: string): string {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return '';
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString(undefined, { dateStyle: 'medium' });
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${day}/${month}/${date.getFullYear()}`;
 }
 
 function toYMD(d: Date): string {
@@ -285,6 +327,7 @@ interface DatePickerInputProps {
   placeholder?: string;
   error?: string;
   minimumDate?: Date;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const DatePickerInput: React.FC<DatePickerInputProps> = ({
@@ -294,6 +337,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
   placeholder = 'Select date',
   error,
   minimumDate = new Date(),
+  onOpenChange,
 }) => {
   const [show, setShow] = useState(false);
   const dateValue = value && /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -301,13 +345,27 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
     : new Date();
 
   const handleChange = (_event: unknown, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShow(false);
+    if (Platform.OS === 'android') {
+      setShow(false);
+      onOpenChange?.(false);
+    }
     if (selectedDate) {
       onChange(toYMD(selectedDate));
     }
   };
 
-  const handleOpen = () => setShow(true);
+  const handleOpen = () => {
+    setShow((prev) => {
+      const next = !prev;
+      onOpenChange?.(next);
+      return next;
+    });
+  };
+
+  const handleDone = () => {
+    setShow(false);
+    onOpenChange?.(false);
+  };
 
   return (
     <View style={styles.inputWrapper}>
@@ -336,9 +394,11 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
         />
       )}
       {show && Platform.OS === 'ios' && (
-        <TouchableOpacity onPress={() => setShow(false)} style={styles.datePickerDone}>
-          <Text style={styles.datePickerDoneText}>Done</Text>
-        </TouchableOpacity>
+        <View style={styles.datePickerDoneRow}>
+          <TouchableOpacity onPress={handleDone} style={styles.datePickerDoneBtn} activeOpacity={0.7}>
+            <Text style={styles.datePickerDoneText}>Done</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -359,6 +419,22 @@ function toHHMM(d: Date): string {
   return `${h}:${m}`;
 }
 
+const TIME_MINUTE_INTERVAL = 10;
+
+function roundMinutesToInterval(date: Date, interval: number): Date {
+  const d = new Date(date);
+  const minutes = d.getMinutes();
+  const rounded = Math.round(minutes / interval) * interval;
+  if (rounded === 60) {
+    d.setHours(d.getHours() + 1);
+    d.setMinutes(0);
+  } else {
+    d.setMinutes(rounded);
+  }
+  d.setSeconds(0, 0);
+  return d;
+}
+
 interface TimePickerInputProps {
   label?: string;
   value: string; // HH:mm
@@ -375,21 +451,22 @@ export const TimePickerInput: React.FC<TimePickerInputProps> = ({
   error,
 }) => {
   const [show, setShow] = useState(false);
-  const timeValue = value && /^\d{1,2}:\d{2}$/.test(value)
+  const handleOpen = () => setShow((prev) => !prev);
+  const rawTimeValue = value && /^\d{1,2}:\d{2}$/.test(value)
     ? (() => {
         const [h, m] = value.split(':').map(Number);
         return new Date(2000, 0, 1, h, m);
       })()
     : new Date();
+  const timeValue = roundMinutesToInterval(rawTimeValue, TIME_MINUTE_INTERVAL);
 
   const handleChange = (_event: unknown, selectedDate?: Date) => {
     if (Platform.OS === 'android') setShow(false);
     if (selectedDate) {
-      onChange(toHHMM(selectedDate));
+      const rounded = roundMinutesToInterval(selectedDate, TIME_MINUTE_INTERVAL);
+      onChange(toHHMM(rounded));
     }
   };
-
-  const handleOpen = () => setShow(true);
 
   return (
     <View style={styles.inputWrapper}>
@@ -410,6 +487,7 @@ export const TimePickerInput: React.FC<TimePickerInputProps> = ({
           value={timeValue}
           mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          minuteInterval={TIME_MINUTE_INTERVAL}
           onChange={handleChange}
           is24Hour
           themeVariant="light"
@@ -476,11 +554,44 @@ export const OrDivider: React.FC<{ label: string }> = ({ label }) => (
 
 // ─── Language Toggle ──────────────────────────────────────────────────────────
 
-export const LangToggle: React.FC<{ language: 'en' | 'mk'; onToggle: () => void }> = ({ language, onToggle }) => (
-  <TouchableOpacity onPress={onToggle} style={styles.langToggle} activeOpacity={0.7}>
-    <Text style={styles.langToggleText}>{language === 'mk' ? 'EN' : 'МК'}</Text>
-  </TouchableOpacity>
-);
+const LANG_TRACK_WIDTH = 72;
+const LANG_THUMB_OFFSET = 4;
+const LANG_THUMB_WIDTH = (LANG_TRACK_WIDTH - LANG_THUMB_OFFSET * 2) / 2;
+const LANG_THUMB_SLIDE = LANG_THUMB_WIDTH;
+
+export const LangToggle: React.FC<{ language: 'en' | 'mk'; onToggle: () => void }> = ({ language, onToggle }) => {
+  const slideAnim = useRef(new Animated.Value(language === 'mk' ? 0 : LANG_THUMB_SLIDE)).current;
+
+  useEffect(() => {
+    Animated.spring(slideAnim, {
+      toValue: language === 'mk' ? 0 : LANG_THUMB_SLIDE,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 8,
+    }).start();
+  }, [language, slideAnim]);
+
+  return (
+    <TouchableOpacity onPress={onToggle} activeOpacity={0.85} style={styles.langToggleTrack}>
+      <Animated.View
+        style={[
+          styles.langToggleThumb,
+          {
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
+      />
+      <View style={styles.langToggleLabels} pointerEvents="none">
+        <View style={[styles.langToggleSlot, styles.langToggleSlotFirst]}>
+          <Text style={[styles.langToggleLabel, language === 'mk' && styles.langToggleLabelActive]}>MK</Text>
+        </View>
+        <View style={[styles.langToggleSlot, styles.langToggleSlotLast]}>
+          <Text style={[styles.langToggleLabel, language === 'en' && styles.langToggleLabelActive]}>EN</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 // ─── Back Button ──────────────────────────────────────────────────────────────
 
@@ -553,15 +664,49 @@ const styles = StyleSheet.create({
   datePickerPlaceholder: { flex: 1, fontSize: typography.sizes.base, color: colors.textSecondary },
   datePickerTouchable: { justifyContent: 'space-between' },
   datePickerChevron: { fontSize: 16, color: colors.textMuted, marginLeft: spacing.sm },
-  datePickerDone: {
+  datePickerDoneRow: {
     marginTop: spacing.sm,
-    paddingVertical: spacing.sm,
     alignItems: 'flex-end',
+  },
+  datePickerDoneBtn: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   datePickerDoneText: { fontSize: typography.sizes.base, fontWeight: typography.weights.semibold, color: colors.primary },
   inputRight: { marginLeft: spacing.xs },
   fieldError: { borderColor: colors.error, backgroundColor: colors.errorLight },
   errorText: { fontSize: typography.sizes.sm, color: colors.error, marginTop: 4 },
+
+  seatsStepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    height: 54,
+    paddingHorizontal: spacing.sm,
+  },
+  seatsStepperBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seatsStepperArrow: {
+    fontSize: 28,
+    color: colors.primary,
+    fontWeight: typography.weights.medium,
+  },
+  seatsStepperArrowDisabled: {
+    color: colors.textMuted,
+  },
+  seatsStepperValue: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
 
   cityPickerLoader: { marginLeft: spacing.sm, justifyContent: 'center' },
   cityPickerTouchable: { justifyContent: 'space-between' },
@@ -627,24 +772,56 @@ const styles = StyleSheet.create({
   orLine: { flex: 1, height: 1, backgroundColor: colors.border },
   orText: { fontSize: typography.sizes.sm, color: colors.textMuted, fontWeight: typography.weights.medium },
 
-  langToggle: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+  langToggleTrack: {
+    width: LANG_TRACK_WIDTH,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.border,
+    justifyContent: 'center',
+    paddingHorizontal: LANG_THUMB_OFFSET,
   },
-  langToggleText: { fontSize: typography.sizes.sm, fontWeight: typography.weights.bold, color: colors.text, letterSpacing: 0.5 },
+  langToggleThumb: {
+    position: 'absolute',
+    left: LANG_THUMB_OFFSET,
+    top: 4,
+    width: LANG_THUMB_WIDTH,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    ...shadows.sm,
+  },
+  langToggleLabels: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    paddingHorizontal: LANG_THUMB_OFFSET,
+  },
+  langToggleSlot: {
+    width: LANG_THUMB_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langToggleSlotFirst: {
+    paddingRight: 6,
+  },
+  langToggleSlotLast: {
+    paddingRight: 9,
+  },
+  langToggleLabel: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: colors.textMuted,
+  },
+  langToggleLabelActive: {
+    color: colors.textInverse,
+  },
 
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: -spacing.sm,
   },
   backArrow: { fontSize: 20, color: colors.text },
 });

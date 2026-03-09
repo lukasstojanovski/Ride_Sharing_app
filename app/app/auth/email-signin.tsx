@@ -13,6 +13,7 @@ import {
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Button,
   Input,
@@ -72,9 +73,6 @@ export default function EmailSigninScreen() {
             <LangToggle language={language} onToggle={toggleLanguage} />
           </View>
 
-          <View style={styles.iconCircle}>
-            <Text style={styles.icon}>👋</Text>
-          </View>
           <Text style={styles.title}>{t.emailSignin.title}</Text>
           <Text style={styles.subtitle}>{t.emailSignin.subtitle}</Text>
 
@@ -103,10 +101,12 @@ export default function EmailSigninScreen() {
               placeholder={t.emailSignin.passwordPlaceholder}
               secureTextEntry={!showPassword}
               rightElement={
-                <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-                  <Text style={styles.showHide}>
-                    {showPassword ? "🙈" : "👁️"}
-                  </Text>
+                <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={22}
+                    color={colors.textMuted}
+                  />
                 </TouchableOpacity>
               }
             />
@@ -155,16 +155,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
 
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-  },
-  icon: { fontSize: 30 },
   title: {
     fontSize: typography.sizes["2xl"],
     fontWeight: typography.weights.extrabold,
@@ -179,7 +169,6 @@ const styles = StyleSheet.create({
   },
 
   form: { gap: spacing.base, marginBottom: spacing.xl },
-  showHide: { fontSize: 18, paddingHorizontal: 8 },
   errorText: {
     fontSize: typography.sizes.sm,
     color: colors.error,

@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useI18n } from "@/lib/i18n";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Button,
   Input,
@@ -128,10 +129,12 @@ export default function EmailSignupScreen() {
               secureTextEntry={!showPassword}
               error={errors.password}
               rightElement={
-                <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-                  <Text style={styles.showHide}>
-                    {showPassword ? "🙈" : "👁️"}
-                  </Text>
+                <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={22}
+                    color={colors.textMuted}
+                  />
                 </TouchableOpacity>
               }
             />
@@ -224,5 +227,4 @@ const styles = StyleSheet.create({
   },
 
   form: { gap: spacing.base, marginBottom: spacing.xl },
-  showHide: { fontSize: 18, paddingHorizontal: spacing.sm },
 });

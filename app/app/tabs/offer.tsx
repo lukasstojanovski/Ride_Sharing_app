@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,16 +9,16 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Button, Input, DatePickerInput, TimePickerInput, CityPickerInput } from "@/components/AuthComponents";
+import { Button, Input, DatePickerInput, TimePickerInput, CityPickerInput, SeatsStepper } from "@/components/AuthComponents";
 import { AppHeader } from "@/components/AppHeader";
-import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
-import { colors, typography, spacing, radius } from "@/constants/theme";
+import { colors, typography, spacing, radius, shadows, MAX_SEATS } from "@/constants/theme";
 
 export default function OfferRideScreen() {
-  const { t, toggleLanguage, language } = useI18n();
+  const { t } = useI18n();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [date, setDate] = useState(() => {
@@ -26,27 +26,43 @@ export default function OfferRideScreen() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
   const [time, setTime] = useState("");
-  const [seats, setSeats] = useState("");
+  const [seats, setSeats] = useState(1);
   const [price, setPrice] = useState("");
-  const [pickupNote, setPickupNote] = useState("");
-  const [dropoffNote, setDropoffNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (success) {
+        setSuccess(false);
+        setFrom("");
+        setTo("");
+        setDate(() => {
+          const d = new Date();
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        });
+        setTime("");
+        setSeats(1);
+        setPrice("");
+        setError(null);
+      }
+    }, [success])
+  );
 
   const handlePublish = async () => {
     const f = from.trim();
     const t_val = to.trim();
     const d = date.trim();
     const tm = time.trim();
-    const s = parseInt(seats, 10);
+    const s = seats;
     const p = parseFloat(price.replace(",", "."));
-    if (!f || !t_val || !d || !tm || !seats || !price) {
+    if (!f || !t_val || !d || !tm || !price) {
       setError(t.offer.fillRequired);
       return;
     }
-    if (isNaN(s) || s < 1) {
-      setError("Seats must be at least 1.");
+    if (s < 1 || s > MAX_SEATS) {
+      setError(`Seats must be between 1 and ${MAX_SEATS}.`);
       return;
     }
     if (isNaN(p) || p < 0) {
@@ -78,8 +94,6 @@ export default function OfferRideScreen() {
       seats_available: s,
       price: p,
       status: "active",
-      pickup_note: pickupNote.trim() || null,
-      dropoff_note: dropoffNote.trim() || null,
     });
     setLoading(false);
     if (e) {
@@ -116,7 +130,7 @@ export default function OfferRideScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AppHeader rightElement={<LangToggle language={language} onToggle={toggleLanguage} />} />
+          <AppHeader />
 
           <Text style={styles.title}>{t.offer.title}</Text>
 
@@ -145,12 +159,10 @@ export default function OfferRideScreen() {
               onChange={setTime}
               placeholder={t.offer.timePlaceholder}
             />
-            <Input
+            <SeatsStepper
               label={t.offer.seats}
               value={seats}
-              onChangeText={(v) => setSeats(v.replace(/\D/g, ""))}
-              placeholder="2"
-              keyboardType="number-pad"
+              onChange={setSeats}
             />
             <Input
               label={t.offer.price}
@@ -158,20 +170,6 @@ export default function OfferRideScreen() {
               onChangeText={(v) => setPrice(v.replace(/[^0-9,.]/g, ""))}
               placeholder="350"
               keyboardType="decimal-pad"
-            />
-            <Input
-              label={t.offer.pickupNote}
-              value={pickupNote}
-              onChangeText={setPickupNote}
-              placeholder="Where to meet"
-              multiline
-            />
-            <Input
-              label={t.offer.dropoffNote}
-              value={dropoffNote}
-              onChangeText={setDropoffNote}
-              placeholder="Drop-off point"
-              multiline
             />
 
             {error ? (
@@ -204,12 +202,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   formCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.xl,
     padding: spacing.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
+    marginBottom: spacing.xl,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
     gap: spacing.base,
+    ...shadows.md,
   },
   errorText: {
     color: colors.error,

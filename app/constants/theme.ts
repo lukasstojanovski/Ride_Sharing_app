@@ -60,6 +60,8 @@ export const radius = {
   full: 9999,
 };
 
+export const MAX_SEATS = 4;
+
 export const shadows = {
   sm: {
     shadowColor: "#0F172A",

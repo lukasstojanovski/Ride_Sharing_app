@@ -16,7 +16,6 @@ import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/AuthComponents";
 import { AppHeader } from "@/components/AppHeader";
-import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius } from "@/constants/theme";
 
@@ -48,7 +47,7 @@ type ReservationWithPassenger = {
 };
 
 export default function MyTripsScreen() {
-  const { t, toggleLanguage, language } = useI18n();
+  const { t } = useI18n();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<"driving" | "riding">(
     tab === "riding" ? "riding" : "driving"
@@ -220,10 +219,12 @@ export default function MyTripsScreen() {
 
   const formatDate = (iso: string) => {
     try {
-      return new Date(iso).toLocaleString(undefined, {
-        dateStyle: "short",
-        timeStyle: "short",
-      });
+      const d = new Date(iso);
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const dateStr = `${day}/${month}/${d.getFullYear()}`;
+      const timeStr = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+      return `${dateStr} ${timeStr}`;
     } catch {
       return iso;
     }
@@ -244,7 +245,7 @@ export default function MyTripsScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <View style={styles.headerWrap}>
-        <AppHeader rightElement={<LangToggle language={language} onToggle={toggleLanguage} />} />
+        <AppHeader />
       </View>
       <View style={styles.container}>
         <View style={styles.tabs}>

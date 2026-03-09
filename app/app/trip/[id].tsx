@@ -95,10 +95,11 @@ export default function TripDetailsScreen() {
   const formatDateTime = (iso: string) => {
     try {
       const d = new Date(iso);
-      return d.toLocaleString(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      });
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const dateStr = `${day}/${month}/${d.getFullYear()}`;
+      const timeStr = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+      return `${dateStr} ${timeStr}`;
     } catch {
       return iso;
     }

@@ -13,7 +13,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { AppHeader } from "@/components/AppHeader";
-import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius } from "@/constants/theme";
 
@@ -29,7 +28,7 @@ type Conversation = {
 };
 
 export default function InboxScreen() {
-  const { t, toggleLanguage, language } = useI18n();
+  const { t, language } = useI18n();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -63,24 +62,31 @@ export default function InboxScreen() {
     };
   }, []);
 
-  const formatDate = (iso: string | null) => {
+  const formatLastMessageTime = (iso: string | null) => {
     if (!iso) return "";
     try {
       const d = new Date(iso);
       const now = new Date();
-      const diff = now.getTime() - d.getTime();
-      if (diff < 60_000) return language === "mk" ? "Пред момент" : "Just now";
-      if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m ${language === "mk" ? "пред" : "ago"}`;
-      if (diff < 86400_000) return `${Math.floor(diff / 3600_000)}h ${language === "mk" ? "пред" : "ago"}`;
-      return d.toLocaleDateString(undefined, { dateStyle: "short", timeStyle: "short" });
+      const diffMs = now.getTime() - d.getTime();
+      if (diffMs < 60_000) return `${Math.max(0, Math.floor(diffMs / 1000))}s`;
+      if (diffMs < 3600_000) return `${Math.floor(diffMs / 60_000)}m`;
+      if (diffMs < 86400_000) return `${Math.floor(diffMs / 3600_000)}h`;
+      const days = Math.floor(diffMs / 86400_000);
+      if (days < 7) return `${days}d`;
+      if (days < 30) return `${Math.floor(days / 7)}w`;
+      if (days < 365) return `${Math.floor(days / 30)}m`;
+      return `${Math.floor(days / 365)}y`;
     } catch {
-      return iso;
+      return "";
     }
   };
 
   const formatDeparture = (iso: string) => {
     try {
-      return new Date(iso).toLocaleDateString(undefined, { dateStyle: "short" });
+      const d = new Date(iso);
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      return `${day}/${month}/${d.getFullYear()}`;
     } catch {
       return iso;
     }
@@ -108,7 +114,7 @@ export default function InboxScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <AppHeader rightElement={<LangToggle language={language} onToggle={toggleLanguage} />} />
+        <AppHeader />
 
         <Text style={styles.title}>{t.inbox.title}</Text>
         {conversations.length === 0 ? (
@@ -135,7 +141,7 @@ export default function InboxScreen() {
               ) : null}
               {(conv.last_message_at || conv.last_message) && (
                 <Text style={styles.cardTime}>
-                  {formatDate(conv.last_message_at)}
+                  {formatLastMessageTime(conv.last_message_at)}
                 </Text>
               )}
             </TouchableOpacity>

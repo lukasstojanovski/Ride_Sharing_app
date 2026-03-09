@@ -113,6 +113,8 @@ export const translations = {
       seats: 'Seats',
       search: 'Search',
       recentSearches: 'Recent searches',
+      chooseDate: 'Choose date',
+      showRides: 'Show rides',
       logOut: 'Log out',
     },
     offer: {
@@ -161,6 +163,7 @@ export const translations = {
     notifications: {
       title: 'Notifications',
       empty: 'No notifications yet.',
+      requestAccepted: 'Request accepted',
     },
     search: {
       loading: 'Loading trips…',
@@ -185,6 +188,19 @@ export const translations = {
       numSeats: 'Number of seats',
       sendRequest: 'Send request',
       goBack: 'Go back',
+    },
+    profile: {
+      title: 'Profile',
+      bio: 'Bio (optional)',
+      bioPlaceholder: 'A short bio…',
+      car: 'Car (optional)',
+      carPlaceholder: 'e.g. Make, model, color',
+      language: 'Language',
+      save: 'Save',
+      changePhoto: 'Change photo',
+      saved: 'Saved',
+      deleteAccount: 'Delete account',
+      memberSince: 'Member since',
     },
   },
 
@@ -302,6 +318,8 @@ export const translations = {
       seats: 'Места',
       search: 'Пребарај',
       recentSearches: 'Скорешни пребарувања',
+      chooseDate: 'Избери датум',
+      showRides: 'Прикажи превози',
       logOut: 'Одјави се',
     },
     offer: {
@@ -350,6 +368,7 @@ export const translations = {
     notifications: {
       title: 'Известувања',
       empty: 'Нема известувања.',
+      requestAccepted: 'Барањето е прифатено',
     },
     search: {
       loading: 'Се вчитуваат превозите…',
@@ -374,6 +393,19 @@ export const translations = {
       numSeats: 'Број на места',
       sendRequest: 'Испрати барање',
       goBack: 'Назад',
+    },
+    profile: {
+      title: 'Профил',
+      bio: 'Биографија (опционално)',
+      bioPlaceholder: 'Краток опис…',
+      car: 'Автомобил (опционално)',
+      carPlaceholder: 'напр. Марка, модел, боја',
+      language: 'Јазик',
+      save: 'Зачувај',
+      changePhoto: 'Промени слика',
+      saved: 'Зачувано',
+      deleteAccount: 'Избриши профил',
+      memberSince: 'Член од',
     },
   },
 };

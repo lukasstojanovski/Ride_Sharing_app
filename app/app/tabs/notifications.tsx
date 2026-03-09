@@ -14,7 +14,6 @@ import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useUnreadNotifications } from "@/lib/UnreadNotificationsContext";
 import { AppHeader } from "@/components/AppHeader";
-import { LangToggle } from "@/components/AuthComponents";
 import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius } from "@/constants/theme";
 
@@ -30,7 +29,7 @@ type Notification = {
 };
 
 export default function NotificationsScreen() {
-  const { t, toggleLanguage, language } = useI18n();
+  const { t } = useI18n();
   const { refresh } = useUnreadNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,17 +87,22 @@ export default function NotificationsScreen() {
     }
   };
 
-  const formatDate = (iso: string) => {
+  const formatTime = (iso: string) => {
+    if (!iso) return "";
     try {
       const d = new Date(iso);
       const now = new Date();
-      const diff = now.getTime() - d.getTime();
-      if (diff < 60_000) return language === "mk" ? "Пред момент" : "Just now";
-      if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m ${language === "mk" ? "пред" : "ago"}`;
-      if (diff < 86400_000) return `${Math.floor(diff / 3600_000)}h ${language === "mk" ? "пред" : "ago"}`;
-      return d.toLocaleDateString(undefined, { dateStyle: "short", timeStyle: "short" });
+      const diffMs = now.getTime() - d.getTime();
+      if (diffMs < 60_000) return `${Math.max(0, Math.floor(diffMs / 1000))}s`;
+      if (diffMs < 3600_000) return `${Math.floor(diffMs / 60_000)}m`;
+      if (diffMs < 86400_000) return `${Math.floor(diffMs / 3600_000)}h`;
+      const days = Math.floor(diffMs / 86400_000);
+      if (days < 7) return `${days}d`;
+      if (days < 30) return `${Math.floor(days / 7)}w`;
+      if (days < 365) return `${Math.floor(days / 30)}m`;
+      return `${Math.floor(days / 365)}y`;
     } catch {
-      return iso;
+      return "";
     }
   };
 
@@ -124,7 +128,7 @@ export default function NotificationsScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <AppHeader rightElement={<LangToggle language={language} onToggle={toggleLanguage} />} />
+        <AppHeader />
 
         <Text style={styles.title}>{t.notifications.title}</Text>
         {notifications.length === 0 ? (
@@ -143,9 +147,11 @@ export default function NotificationsScreen() {
                 !n.related_trip_id
               }
             >
-              <Text style={styles.cardTitle}>{n.title}</Text>
+              <Text style={styles.cardTitle}>
+                {n.type === "reservation_accepted" ? t.notifications.requestAccepted : n.title}
+              </Text>
               {n.body ? <Text style={styles.cardBody}>{n.body}</Text> : null}
-              <Text style={styles.cardDate}>{formatDate(n.created_at)}</Text>
+              <Text style={styles.cardDate}>{formatTime(n.created_at)}</Text>
             </TouchableOpacity>
           ))
         )}
