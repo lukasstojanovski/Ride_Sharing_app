@@ -370,7 +370,7 @@ export default function ChatScreen() {
     return (
       <View>
         {renderDateSeparator(item.date)}
-        {runs.slice().reverse().map((run) => (
+        {runs.map((run) => (
           <View key={run[0].id}>{renderMessageRun(run)}</View>
         ))}
       </View>
@@ -416,11 +416,11 @@ export default function ChatScreen() {
 
         <FlatList
           ref={listRef}
-          data={[...dateGroups].reverse()}
+          data={dateGroups}
           keyExtractor={(s) => s.date + (s.messages[0]?.id ?? "")}
           renderItem={renderSection}
           contentContainerStyle={styles.listContent}
-          inverted
+          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
