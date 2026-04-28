@@ -22,6 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useUnreadInbox } from "@/lib/UnreadInboxContext";
+import { AutoFlatList } from "@/components/AutoFlatList";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
@@ -604,7 +605,7 @@ export default function ChatScreen() {
           <AppHeader showBack onBack={() => router.replace("/tabs/inbox")} title={title} />
         </View>
 
-        <FlatList
+        <AutoFlatList
           ref={listRef}
           data={dateGroups}
           keyExtractor={(s) => s.date + (s.messages[0]?.id ?? "")}
@@ -620,6 +621,9 @@ export default function ChatScreen() {
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="always"
           showsVerticalScrollIndicator={false}
+          scrollEnabled
+          bounces
+          alwaysBounceVertical
           ListHeaderComponent={
             hasMoreOlder ? (
               <TouchableOpacity

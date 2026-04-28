@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   StatusBar,
   Alert,
@@ -16,6 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "@/lib/supabase";
 import { Button, Input } from "@/components/AuthComponents";
+import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius } from "@/constants/theme";
@@ -213,7 +213,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScrollView
+      <AutoScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -341,7 +341,7 @@ export default function ProfileScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </AutoScrollView>
     </SafeAreaView>
   );
 }

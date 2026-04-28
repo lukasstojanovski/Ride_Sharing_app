@@ -9,12 +9,13 @@ import {
   Platform,
   TextInput,
   TouchableOpacity,
-  FlatList,
+  
   Modal,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
+import { AutoFlatList } from "@/components/AutoFlatList";
 import { Button, BackButton, LangToggle } from "@/components/AuthComponents";
 import { colors, typography, spacing, radius } from "@/constants/theme";
 import {
@@ -215,7 +216,7 @@ export default function AddPhoneScreen() {
             />
           </View>
 
-          <FlatList
+          <AutoFlatList
             data={filteredCountries}
             keyExtractor={(item) => item.iso}
             renderItem={({ item }) => (

@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { AutoScrollView } from "@/components/AutoScrollView";
 import { useUnreadNotifications } from "@/lib/UnreadNotificationsContext";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
@@ -120,13 +121,16 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScrollView
+      <AutoScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => setRefreshing(true) || load()} />
         }
         showsVerticalScrollIndicator={false}
+        scrollEnabled
+        bounces
+        alwaysBounceVertical
       >
         <AppHeader />
 
@@ -155,7 +159,7 @@ export default function NotificationsScreen() {
             </TouchableOpacity>
           ))
         )}
-      </ScrollView>
+      </AutoScrollView>
     </SafeAreaView>
   );
 }

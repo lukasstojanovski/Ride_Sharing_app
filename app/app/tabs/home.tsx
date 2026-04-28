@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   StatusBar,
   Image,
@@ -14,13 +13,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Button, DatePickerInput, CityPickerInput, SeatsStepper } from "@/components/AuthComponents";
+import { Button, DatePickerInput, CityPickerInput, SeatsPickerInput } from "@/components/AuthComponents";
+import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
 import { getRecentSearches, addRecentSearch, getUniqueRoutes } from "@/lib/recentSearches";
 
 const PROFILE_ICON_SIZE = 36;
+const MAX_VISIBLE_RECENT_ROUTES = 4;
 
 export default function HomeScreen() {
   const { t } = useI18n();
@@ -61,7 +62,9 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    getRecentSearches().then((list) => setRecentRoutes(getUniqueRoutes(list)));
+    getRecentSearches().then((list) =>
+      setRecentRoutes(getUniqueRoutes(list).slice(0, MAX_VISIBLE_RECENT_ROUTES))
+    );
   }, []);
 
   const handleSearch = async () => {
@@ -73,7 +76,7 @@ export default function HomeScreen() {
     await addRecentSearch({ from: f, to: t_val, date: d, seats: s });
     setRecentRoutes((prev) => {
       const rest = prev.filter((r) => r.from !== f || r.to !== t_val);
-      return [{ from: f, to: t_val }, ...rest].slice(0, 10);
+      return [{ from: f, to: t_val }, ...rest].slice(0, MAX_VISIBLE_RECENT_ROUTES);
     });
     router.push({
       pathname: "/search-results",
@@ -104,7 +107,7 @@ export default function HomeScreen() {
     await addRecentSearch({ from: f, to: t_val, date: d, seats: "1" });
     setRecentRoutes((prev) => {
       const rest = prev.filter((r) => r.from !== f || r.to !== t_val);
-      return [{ from: f, to: t_val }, ...rest].slice(0, 10);
+      return [{ from: f, to: t_val }, ...rest].slice(0, MAX_VISIBLE_RECENT_ROUTES);
     });
     closeDateModal();
     router.push({
@@ -116,11 +119,14 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScrollView
+      <AutoScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled
+        bounces
+        alwaysBounceVertical
       >
         <AppHeader
           rightElement={
@@ -148,27 +154,25 @@ export default function HomeScreen() {
 
         <View style={styles.formCard}>
           <CityPickerInput
-            label={t.home.from}
             value={from}
             onChange={setFrom}
-            placeholder="Скопје"
+            placeholder={t.home.from}
           />
           <CityPickerInput
-            label={t.home.to}
             value={to}
             onChange={setTo}
-            placeholder="Охрид"
+            placeholder={t.home.to}
           />
           <DatePickerInput
-            label={t.home.date}
             value={date}
             onChange={setDate}
-            placeholder={t.home.datePlaceholder}
+            showTodayLabel
+            leftElement={<Ionicons name="calendar-outline" size={18} color={colors.textMuted} />}
           />
-          <SeatsStepper
-            label={t.home.seats}
-            value={Math.min(4, Math.max(1, parseInt(seats, 10) || 1))}
-            onChange={(n) => setSeats(String(n))}
+          <SeatsPickerInput
+            value={seats}
+            onChange={setSeats}
+            leftElement={<Ionicons name="person-outline" size={18} color={colors.textMuted} />}
           />
 
           <Button
@@ -196,7 +200,7 @@ export default function HomeScreen() {
             ))}
           </View>
         ) : null}
-      </ScrollView>
+      </AutoScrollView>
 
       <Modal
         visible={dateModalVisible}
@@ -253,7 +257,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: {
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing["3xl"],
+    paddingBottom: 0,
   },
   title: {
     fontSize: typography.sizes["2xl"],
@@ -272,7 +276,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderRadius: radius.xl,
     padding: spacing.xl,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
     borderWidth: 1.5,
     borderColor: colors.primary,
     gap: spacing.base,
@@ -281,7 +285,7 @@ const styles = StyleSheet.create({
   searchBtn: { marginTop: spacing.sm },
 
   recentSection: {
-    marginBottom: spacing.xl,
+    marginBottom: 0,
   },
   recentTitle: {
     fontSize: typography.sizes.sm,
@@ -295,7 +299,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   recentChipText: {
     fontSize: typography.sizes.sm,

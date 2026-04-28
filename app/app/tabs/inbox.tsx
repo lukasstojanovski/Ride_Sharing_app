@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
 import { colors, typography, spacing, radius } from "@/constants/theme";
@@ -106,13 +107,16 @@ export default function InboxScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScrollView
+      <AutoScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => setRefreshing(true) || load()} />
         }
         showsVerticalScrollIndicator={false}
+        scrollEnabled
+        bounces
+        alwaysBounceVertical
       >
         <AppHeader />
 
@@ -147,7 +151,7 @@ export default function InboxScreen() {
             </TouchableOpacity>
           ))
         )}
-      </ScrollView>
+      </AutoScrollView>
     </SafeAreaView>
   );
 }
@@ -155,7 +159,7 @@ export default function InboxScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
+  content: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
   centered: {
     flex: 1,
     justifyContent: "center",

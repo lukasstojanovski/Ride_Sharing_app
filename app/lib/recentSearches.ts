@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const KEY = "recentSearches";
-const MAX = 10;
+const MAX = 4;
 
 export interface RecentSearch {
   from: string;

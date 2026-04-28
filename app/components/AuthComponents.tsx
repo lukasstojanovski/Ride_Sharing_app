@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
 import { colors, typography, spacing, radius, shadows, MAX_SEATS } from '@/constants/theme';
 
 // ─── Button ───────────────────────────────────────────────────────────────────
@@ -97,6 +98,110 @@ export const SeatsStepper: React.FC<SeatsStepperProps> = ({ label, value, onChan
         </TouchableOpacity>
       </View>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
+    </View>
+  );
+};
+
+// ─── Seats Picker (1 to MAX_SEATS, wheel like date picker) ─────────────────────
+
+const SEAT_OPTIONS = Array.from({ length: MAX_SEATS }, (_, i) => i + 1);
+
+interface SeatsPickerInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  leftElement?: React.ReactNode;
+  error?: string;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export const SeatsPickerInput: React.FC<SeatsPickerInputProps> = ({
+  value,
+  onChange,
+  leftElement,
+  error,
+  onOpenChange,
+}) => {
+  const [show, setShow] = useState(false);
+  const [draft, setDraft] = useState(1);
+  const num = Math.min(MAX_SEATS, Math.max(1, parseInt(value, 10) || 1));
+
+  const handleOpen = () => {
+    setDraft(num);
+    setShow((prev) => {
+      const next = !prev;
+      onOpenChange?.(next);
+      return next;
+    });
+  };
+
+  const close = () => {
+    setShow(false);
+    onOpenChange?.(false);
+  };
+
+  const handleDone = () => {
+    if (Platform.OS === 'android') {
+      onChange(String(draft));
+    }
+    close();
+  };
+
+  const handleIosValueChange = (v: number) => {
+    onChange(String(v));
+  };
+
+  const picker = (
+    <Picker
+      selectedValue={Platform.OS === 'android' ? draft : num}
+      onValueChange={(v) => {
+        const n = Number(v);
+        if (Platform.OS === 'android') setDraft(n);
+        else handleIosValueChange(n);
+      }}
+      themeVariant="light"
+      style={styles.seatsPicker}
+      itemStyle={styles.seatsPickerItem}
+    >
+      {SEAT_OPTIONS.map((n) => (
+        <Picker.Item key={n} label={String(n)} value={n} />
+      ))}
+    </Picker>
+  );
+
+  return (
+    <View style={styles.inputWrapper}>
+      <TouchableOpacity
+        onPress={handleOpen}
+        activeOpacity={0.7}
+        style={[styles.inputRow, styles.datePickerTouchable, error ? styles.fieldError : null]}
+      >
+        {leftElement ? <View style={styles.inputLeft}>{leftElement}</View> : null}
+        <Text style={[styles.input, styles.datePickerValue]}>{num}</Text>
+        <Text style={styles.datePickerChevron}>▾</Text>
+      </TouchableOpacity>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {show && Platform.OS === 'ios' ? (
+        <>
+          {picker}
+          <View style={styles.datePickerDoneRow}>
+            <TouchableOpacity onPress={handleDone} style={styles.datePickerDoneBtn} activeOpacity={0.7}>
+              <Text style={styles.datePickerDoneText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : null}
+      {show && Platform.OS === 'android' ? (
+        <Modal transparent animationType="fade" visible={show} onRequestClose={close}>
+          <TouchableOpacity style={styles.seatsPickerModalOverlay} activeOpacity={1} onPress={close}>
+            <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.seatsPickerModalCard}>
+              {picker}
+              <TouchableOpacity onPress={handleDone} style={styles.seatsPickerModalDone} activeOpacity={0.7}>
+                <Text style={styles.datePickerDoneText}>Done</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+      ) : null}
     </View>
   );
 };
@@ -328,6 +433,8 @@ interface DatePickerInputProps {
   error?: string;
   minimumDate?: Date;
   onOpenChange?: (open: boolean) => void;
+  showTodayLabel?: boolean;
+  leftElement?: React.ReactNode;
 }
 
 export const DatePickerInput: React.FC<DatePickerInputProps> = ({
@@ -338,8 +445,15 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
   error,
   minimumDate = new Date(),
   onOpenChange,
+  showTodayLabel = false,
+  leftElement,
 }) => {
   const [show, setShow] = useState(false);
+  const todayYMD = toYMD(new Date());
+  const isTodaySelected = value === todayYMD;
+  const displayText = value
+    ? (showTodayLabel && isTodaySelected ? 'Today' : formatDateForDisplay(value))
+    : (showTodayLabel ? '' : placeholder);
   const dateValue = value && /^\d{4}-\d{2}-\d{2}$/.test(value)
     ? new Date(value + 'T12:00:00')
     : new Date();
@@ -375,8 +489,9 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
         activeOpacity={0.7}
         style={[styles.inputRow, styles.datePickerTouchable, error ? styles.fieldError : null]}
       >
+        {leftElement ? <View style={styles.inputLeft}>{leftElement}</View> : null}
         <Text style={[styles.input, value ? styles.datePickerValue : styles.datePickerPlaceholder]}>
-          {value ? formatDateForDisplay(value) : placeholder}
+          {displayText}
         </Text>
         <Text style={styles.datePickerChevron}>▾</Text>
       </TouchableOpacity>
@@ -673,6 +788,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   datePickerDoneText: { fontSize: typography.sizes.base, fontWeight: typography.weights.semibold, color: colors.primary },
+  inputLeft: { marginRight: spacing.sm, alignItems: 'center', justifyContent: 'center' },
   inputRight: { marginLeft: spacing.xs },
   fieldError: { borderColor: colors.error, backgroundColor: colors.errorLight },
   errorText: { fontSize: typography.sizes.sm, color: colors.error, marginTop: 4 },
@@ -706,6 +822,36 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.lg,
     fontWeight: typography.weights.bold,
     color: colors.text,
+  },
+
+  seatsPicker: {
+    marginTop: spacing.xs,
+    width: '100%',
+    ...(Platform.OS === 'ios' ? { height: 180 } : { height: 200 }),
+  },
+  seatsPickerItem: {
+    fontSize: typography.sizes.lg,
+    color: colors.text,
+  },
+  seatsPickerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  seatsPickerModalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.background,
+    borderRadius: radius.xl,
+    padding: spacing.base,
+    ...shadows.lg,
+  },
+  seatsPickerModalDone: {
+    alignSelf: 'flex-end',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
 
   cityPickerLoader: { marginLeft: spacing.sm, justifyContent: 'center' },

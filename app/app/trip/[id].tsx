@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  
   TouchableOpacity,
   ActivityIndicator,
   Modal,
@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { AutoScrollView } from "@/components/AutoScrollView";
 import { Button } from "@/components/AuthComponents";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
@@ -162,7 +163,7 @@ export default function TripDetailsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScrollView
+      <AutoScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -266,7 +267,7 @@ export default function TripDetailsScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </AutoScrollView>
     </SafeAreaView>
   );
 }

@@ -7,12 +7,12 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   TouchableOpacity,
 } from "react-native";
 import { router } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { Ionicons } from "@expo/vector-icons";
+import { AutoScrollView } from "@/components/AutoScrollView";
 import {
   Button,
   Input,
@@ -73,10 +73,13 @@ export default function EmailSignupScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.kav}
       >
-        <ScrollView
+        <AutoScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          scrollEnabled
+          bounces
+          alwaysBounceVertical
         >
           <View style={styles.topBar}>
             <BackButton onPress={() => router.back()} />
@@ -102,14 +105,13 @@ export default function EmailSignupScreen() {
 
           <View style={styles.form}>
             <Input
-              label={t.emailSignup.email}
               value={email}
               onChangeText={(v) => {
                 setEmail(v);
                 if (errors.email)
                   setErrors((e) => ({ ...e, email: undefined }));
               }}
-              placeholder={t.emailSignup.emailPlaceholder}
+              placeholder={t.emailSignup.email}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -118,14 +120,13 @@ export default function EmailSignupScreen() {
             />
 
             <Input
-              label={t.emailSignup.password}
               value={password}
               onChangeText={(v) => {
                 setPassword(v);
                 if (errors.password)
                   setErrors((e) => ({ ...e, password: undefined }));
               }}
-              placeholder={t.emailSignup.passwordPlaceholder}
+              placeholder={t.emailSignup.password}
               secureTextEntry={!showPassword}
               error={errors.password}
               rightElement={
@@ -140,14 +141,13 @@ export default function EmailSignupScreen() {
             />
 
             <Input
-              label={t.emailSignup.confirmPassword}
               value={confirmPassword}
               onChangeText={(v) => {
                 setConfirmPassword(v);
                 if (errors.confirmPassword)
                   setErrors((e) => ({ ...e, confirmPassword: undefined }));
               }}
-              placeholder={t.emailSignup.confirmPasswordPlaceholder}
+              placeholder={t.emailSignup.confirmPassword}
               secureTextEntry={!showPassword}
               error={errors.confirmPassword}
             />
@@ -158,7 +158,7 @@ export default function EmailSignupScreen() {
             onPress={handleNext}
             disabled={!email || !password || !confirmPassword}
           />
-        </ScrollView>
+        </AutoScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -167,7 +167,7 @@ export default function EmailSignupScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   kav: { flex: 1 },
-  scroll: { paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
+  scroll: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
 
   topBar: {
     flexDirection: "row",

@@ -7,13 +7,13 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   TouchableOpacity,
 } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
 import { Ionicons } from "@expo/vector-icons";
+import { AutoScrollView } from "@/components/AutoScrollView";
 import {
   Button,
   Input,
@@ -63,10 +63,13 @@ export default function EmailSigninScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.kav}
       >
-        <ScrollView
+        <AutoScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          scrollEnabled
+          bounces
+          alwaysBounceVertical
         >
           <View style={styles.topBar}>
             <BackButton onPress={() => router.back()} />
@@ -78,13 +81,12 @@ export default function EmailSigninScreen() {
 
           <View style={styles.form}>
             <Input
-              label={t.emailSignin.email}
               value={email}
               onChangeText={(v) => {
                 setEmail(v);
                 if (error) setError("");
               }}
-              placeholder={t.emailSignin.emailPlaceholder}
+              placeholder={t.emailSignin.email}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -92,13 +94,12 @@ export default function EmailSigninScreen() {
             />
 
             <Input
-              label={t.emailSignin.password}
               value={password}
               onChangeText={(v) => {
                 setPassword(v);
                 if (error) setError("");
               }}
-              placeholder={t.emailSignin.passwordPlaceholder}
+              placeholder={t.emailSignin.password}
               secureTextEntry={!showPassword}
               rightElement={
                 <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -136,7 +137,7 @@ export default function EmailSigninScreen() {
               <Text style={styles.signupLink}>{t.emailSignin.signUp}</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </AutoScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -145,7 +146,7 @@ export default function EmailSigninScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   kav: { flex: 1 },
-  scroll: { paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
+  scroll: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
 
   topBar: {
     flexDirection: "row",

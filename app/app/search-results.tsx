@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  
   TouchableOpacity,
   ActivityIndicator,
   StatusBar,
@@ -11,9 +11,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { AutoFlatList } from "@/components/AutoFlatList";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
+import { colors, typography, spacing, radius, shadows, MAX_SEATS } from "@/constants/theme";
 
 type TripRow = {
   id: string;
@@ -38,7 +39,7 @@ export default function SearchResultsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const seatsNum = Math.max(1, parseInt(seats || "1", 10) || 1);
+  const seatsNum = Math.min(MAX_SEATS, Math.max(1, parseInt(seats || "1", 10) || 1));
   const dateStr = (date || "").trim();
   const startOfDay = dateStr ? `${dateStr}T00:00:00.000Z` : "";
   const endOfDay = dateStr ? `${dateStr}T23:59:59.999Z` : "";
@@ -143,7 +144,7 @@ export default function SearchResultsScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
+        <AutoFlatList
           data={trips}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}

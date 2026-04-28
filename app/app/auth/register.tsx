@@ -7,11 +7,11 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
+import { AutoScrollView } from "@/components/AutoScrollView";
 import {
   Button,
   Input,
@@ -115,7 +115,7 @@ export default function RegisterScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.kav}
       >
-        <ScrollView
+        <AutoScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -186,7 +186,7 @@ export default function RegisterScreen() {
             loading={loading}
             disabled={!firstName.trim() || !lastName.trim()}
           />
-        </ScrollView>
+        </AutoScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

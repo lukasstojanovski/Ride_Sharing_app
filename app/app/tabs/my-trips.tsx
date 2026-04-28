@@ -4,7 +4,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { AutoScrollView } from "@/components/AutoScrollView";
 import { Button } from "@/components/AuthComponents";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
@@ -283,7 +284,7 @@ export default function MyTripsScreen() {
         </View>
       ) : null}
 
-      <ScrollView
+      <AutoScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         refreshControl={
@@ -424,7 +425,7 @@ export default function MyTripsScreen() {
             )}
           </>
         )}
-      </ScrollView>
+      </AutoScrollView>
     </View>
     </SafeAreaView>
   );

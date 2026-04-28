@@ -61,6 +61,7 @@ export default function TabsLayout() {
         name="offer"
         options={{
           title: t.tabs.offer,
+          unmountOnBlur: true,
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? iconMap.offer.active : iconMap.offer.inactive} size={size} color={color} />
           ),

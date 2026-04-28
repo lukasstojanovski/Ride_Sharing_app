@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   StatusBar,
-  ScrollView,
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { Button, OrDivider, LangToggle } from "@/components/AuthComponents";
+import { AutoScrollView } from "@/components/AutoScrollView";
 import {
   colors,
   typography,
@@ -26,10 +26,13 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
-      <ScrollView
+      <AutoScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled
+        bounces
+        alwaysBounceVertical
       >
         {/* Header */}
         <View style={styles.header}>
@@ -84,14 +87,14 @@ export default function LoginScreen() {
           {t.welcome.termsMiddle}
           <Text style={styles.termsLink}>{t.welcome.privacyLink}</Text>
         </Text>
-      </ScrollView>
+      </AutoScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  scroll: { paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
+  scroll: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
 
   header: {
     flexDirection: "row",
