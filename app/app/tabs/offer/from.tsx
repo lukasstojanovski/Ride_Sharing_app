@@ -32,7 +32,7 @@ export default function OfferWhereFromScreen() {
       return;
     }
     setError(null);
-    router.push("/tabs/offer/when");
+    router.push("/tabs/offer/pickup");
   };
 
   return (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { AutoScrollView } from "@/components/AutoScrollView";
 import { Button } from "@/components/AuthComponents";
@@ -29,6 +28,12 @@ type Trip = {
   seats_total: number;
   price: number;
   status: string;
+  pickup_address: string | null;
+  pickup_lat: number | null;
+  pickup_lng: number | null;
+  dropoff_address: string | null;
+  dropoff_lat: number | null;
+  dropoff_lng: number | null;
 };
 
 type ReservationWithTrip = {
@@ -199,6 +204,34 @@ export default function MyTripsScreen() {
   const hasAcceptedReservation = (tripId: string) =>
     (reservationsByTrip[tripId] || []).some((r) => r.status === "accepted");
 
+  const goToPickupMap = (trip: Trip) => {
+    if (trip.pickup_lat === null || trip.pickup_lng === null) return;
+    router.push({
+      pathname: "/trip/pickup-map",
+      params: {
+        lat: String(trip.pickup_lat),
+        lng: String(trip.pickup_lng),
+        address: trip.pickup_address ?? "",
+        fromCity: trip.from_city,
+        mode: "pickup",
+      },
+    });
+  };
+
+  const goToDropoffMap = (trip: Trip) => {
+    if (trip.dropoff_lat === null || trip.dropoff_lng === null) return;
+    router.push({
+      pathname: "/trip/pickup-map",
+      params: {
+        lat: String(trip.dropoff_lat),
+        lng: String(trip.dropoff_lng),
+        address: trip.dropoff_address ?? "",
+        fromCity: trip.to_city,
+        mode: "dropoff",
+      },
+    });
+  };
+
   const handleCancelReservation = async (reservationId: string) => {
     setActionLoading(reservationId);
     setError(null);
@@ -308,6 +341,22 @@ export default function MyTripsScreen() {
                   <Text style={styles.cardMeta}>
                     {trip.seats_available} / {trip.seats_total} seats · {trip.price} den
                   </Text>
+                  {trip.pickup_lat !== null && trip.pickup_lng !== null ? (
+                    <Button
+                      label={t.myTrips.viewPickup}
+                      variant="outline"
+                      onPress={() => goToPickupMap(trip)}
+                      style={styles.pickupBtn}
+                    />
+                  ) : null}
+                  {trip.dropoff_lat !== null && trip.dropoff_lng !== null ? (
+                    <Button
+                      label={t.myTrips.viewDropoff}
+                      variant="outline"
+                      onPress={() => goToDropoffMap(trip)}
+                      style={styles.pickupBtn}
+                    />
+                  ) : null}
                   {(reservationsByTrip[trip.id] || []).length > 0 && (
                     <View style={styles.resList}>
                       <Text style={styles.resTitle}>{t.myTrips.requests}</Text>
@@ -420,6 +469,22 @@ export default function MyTripsScreen() {
                       style={styles.cancelResBtn}
                     />
                   )}
+                  {res.trips.pickup_lat !== null && res.trips.pickup_lng !== null ? (
+                    <Button
+                      label={t.myTrips.viewPickup}
+                      variant="outline"
+                      onPress={() => goToPickupMap(res.trips)}
+                      style={styles.pickupBtn}
+                    />
+                  ) : null}
+                  {res.trips.dropoff_lat !== null && res.trips.dropoff_lng !== null ? (
+                    <Button
+                      label={t.myTrips.viewDropoff}
+                      variant="outline"
+                      onPress={() => goToDropoffMap(res.trips)}
+                      style={styles.pickupBtn}
+                    />
+                  ) : null}
                 </View>
               ))
             )}
@@ -531,6 +596,7 @@ const styles = StyleSheet.create({
   },
   resBtn: { flex: 1 },
   chatBtn: { marginTop: spacing.sm },
+  pickupBtn: { marginTop: spacing.sm },
   cancelBtn: { marginTop: spacing.md },
   cancelResBtn: { marginTop: spacing.md },
 });

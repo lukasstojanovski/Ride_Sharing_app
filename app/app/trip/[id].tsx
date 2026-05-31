@@ -29,6 +29,12 @@ type Trip = {
   price: number;
   pickup_note: string | null;
   dropoff_note: string | null;
+  pickup_address: string | null;
+  pickup_lat: number | null;
+  pickup_lng: number | null;
+  dropoff_address: string | null;
+  dropoff_lat: number | null;
+  dropoff_lng: number | null;
   profiles: { full_name: string | null } | null;
 };
 
@@ -53,7 +59,7 @@ export default function TripDetailsScreen() {
     setError(null);
     supabase
       .from("trips")
-      .select("id, from_city, to_city, departure_time, seats_available, seats_total, price, pickup_note, dropoff_note, profiles!creator_id(full_name)")
+      .select("id, from_city, to_city, departure_time, seats_available, seats_total, price, pickup_note, dropoff_note, pickup_address, pickup_lat, pickup_lng, dropoff_address, dropoff_lat, dropoff_lng, profiles!creator_id(full_name)")
       .eq("id", id)
       .single()
       .then(({ data, error: e }) => {
@@ -199,6 +205,45 @@ export default function TripDetailsScreen() {
         ) : null}
       </View>
 
+      {trip.pickup_lat !== null && trip.pickup_lng !== null ? (
+        <Button
+          label={t.trip.viewPickup}
+          variant="outline"
+          onPress={() =>
+            router.push({
+              pathname: "/trip/pickup-map",
+              params: {
+                lat: String(trip.pickup_lat),
+                lng: String(trip.pickup_lng),
+                address: trip.pickup_address ?? "",
+                fromCity: trip.from_city,
+                mode: "pickup",
+              },
+            })
+          }
+          style={styles.pickupBtn}
+        />
+      ) : null}
+      {trip.dropoff_lat !== null && trip.dropoff_lng !== null ? (
+        <Button
+          label={t.trip.viewDropoff}
+          variant="outline"
+          onPress={() =>
+            router.push({
+              pathname: "/trip/pickup-map",
+              params: {
+                lat: String(trip.dropoff_lat),
+                lng: String(trip.dropoff_lng),
+                address: trip.dropoff_address ?? "",
+                fromCity: trip.to_city,
+                mode: "dropoff",
+              },
+            })
+          }
+          style={styles.pickupBtn}
+        />
+      ) : null}
+
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t.trip.driver}</Text>
         <Text style={styles.driverName}>
@@ -323,6 +368,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   chatBtn: { marginTop: spacing.lg },
+  pickupBtn: { marginTop: spacing.lg },
   btn: { marginTop: spacing.lg },
   sent: {
     marginTop: spacing.lg,

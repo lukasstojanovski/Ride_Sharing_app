@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  
   KeyboardAvoidingView,
   Platform,
   StatusBar,
@@ -14,7 +13,6 @@ import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
 import { colors, MAX_SEATS } from "@/constants/theme";
-import { supabase } from "@/lib/supabase";
 import { useOfferWizard } from "./OfferWizardContext";
 import { stepStyles } from "./stepStyles";
 
@@ -36,16 +34,13 @@ export default function OfferDetailsScreen() {
     setPrice,
     error,
     setError,
-    loading,
-    setLoading,
-    success,
-    setSuccess,
-    resetWizard,
-    clearOfferDraft,
-    remountStack,
+    pickupLat,
+    pickupLng,
+    dropoffLat,
+    dropoffLng,
   } = useOfferWizard();
 
-  const handlePublish = async () => {
+  const handleNext = () => {
     const f = from.trim();
     const tVal = to.trim();
     const d = date.trim();
@@ -67,6 +62,14 @@ export default function OfferDetailsScreen() {
       setError(t.offer.fillDetailsRequired);
       return;
     }
+    if (pickupLat === null || pickupLng === null) {
+      setError(t.offer.pickupRequired);
+      return;
+    }
+    if (dropoffLat === null || dropoffLng === null) {
+      setError(t.offer.dropoffRequired);
+      return;
+    }
     const [year, month, day] = d.split("-").map(Number);
     const [hour, minute] = tm.split(":").map(Number);
     const localDate = new Date(year, month - 1, day, hour, minute, 0, 0);
@@ -74,56 +77,9 @@ export default function OfferDetailsScreen() {
       setError(t.offer.invalidDateTime);
       return;
     }
-    const departureTime = localDate.toISOString();
     setError(null);
-    setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      setError(t.offer.loginRequired);
-      return;
-    }
-    const vehicle = vehicleInfo.trim();
-    const { error: e } = await supabase.from("trips").insert({
-      creator_id: user.id,
-      from_city: f,
-      to_city: tVal,
-      departure_time: departureTime,
-      seats_total: seats,
-      seats_available: seats,
-      price: p,
-      status: "active",
-      vehicle_info: vehicle.length > 0 ? vehicle : null,
-      smoking_allowed: smokingAllowed,
-      pets_allowed: petsAllowed,
-    });
-    setLoading(false);
-    if (e) {
-      setError(e.message);
-      return;
-    }
-    setSuccess(true);
-    clearOfferDraft();
-    setTimeout(() => {
-      router.push("/tabs/my-trips");
-      resetWizard();
-      remountStack();
-    }, 1500);
+    router.push("/tabs/offer/review");
   };
-
-  if (success) {
-    return (
-      <SafeAreaView style={stepStyles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-        <View style={stepStyles.centered}>
-          <Text style={stepStyles.successText}>{t.offer.success}</Text>
-          <Text style={stepStyles.successSub}>{t.offer.successSub}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={stepStyles.safe}>
@@ -182,10 +138,8 @@ export default function OfferDetailsScreen() {
           {error ? <Text style={stepStyles.errorText}>{error}</Text> : null}
 
           <Button
-            label={t.offer.publish}
-            onPress={handlePublish}
-            loading={loading}
-            disabled={loading}
+            label={t.offer.next}
+            onPress={handleNext}
             style={stepStyles.btn}
           />
         </AutoScrollView>

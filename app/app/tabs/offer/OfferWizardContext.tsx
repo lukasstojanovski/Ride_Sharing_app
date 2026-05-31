@@ -10,6 +10,18 @@ export type OfferWizardContextValue = {
   setTo: (v: string) => void;
   from: string;
   setFrom: (v: string) => void;
+  pickupAddress: string;
+  setPickupAddress: (v: string) => void;
+  pickupLat: number | null;
+  setPickupLat: (v: number | null) => void;
+  pickupLng: number | null;
+  setPickupLng: (v: number | null) => void;
+  dropoffAddress: string;
+  setDropoffAddress: (v: string) => void;
+  dropoffLat: number | null;
+  setDropoffLat: (v: number | null) => void;
+  dropoffLng: number | null;
+  setDropoffLng: (v: number | null) => void;
   date: string;
   setDate: (v: string) => void;
   time: string;
@@ -42,6 +54,12 @@ const OfferWizardContext = createContext<OfferWizardContextValue | null>(null);
 export function OfferWizardProvider({ children }: { children: React.ReactNode }) {
   const [to, setTo] = useState("");
   const [from, setFrom] = useState("");
+  const [pickupAddress, setPickupAddress] = useState("");
+  const [pickupLat, setPickupLat] = useState<number | null>(null);
+  const [pickupLng, setPickupLng] = useState<number | null>(null);
+  const [dropoffAddress, setDropoffAddress] = useState("");
+  const [dropoffLat, setDropoffLat] = useState<number | null>(null);
+  const [dropoffLng, setDropoffLng] = useState<number | null>(null);
   const [date, setDate] = useState(defaultDateYmd);
   const [time, setTime] = useState("");
   const [seats, setSeats] = useState(1);
@@ -57,6 +75,12 @@ export function OfferWizardProvider({ children }: { children: React.ReactNode })
   const resetWizard = useCallback(() => {
     setTo("");
     setFrom("");
+    setPickupAddress("");
+    setPickupLat(null);
+    setPickupLng(null);
+    setDropoffAddress("");
+    setDropoffLat(null);
+    setDropoffLng(null);
     setDate(defaultDateYmd());
     setTime("");
     setSeats(1);
@@ -76,6 +100,12 @@ export function OfferWizardProvider({ children }: { children: React.ReactNode })
   const clearOfferDraft = useCallback(() => {
     setTo("");
     setFrom("");
+    setPickupAddress("");
+    setPickupLat(null);
+    setPickupLng(null);
+    setDropoffAddress("");
+    setDropoffLat(null);
+    setDropoffLng(null);
     setDate(defaultDateYmd());
     setTime("");
     setSeats(1);
@@ -92,6 +122,18 @@ export function OfferWizardProvider({ children }: { children: React.ReactNode })
       setTo,
       from,
       setFrom,
+      pickupAddress,
+      setPickupAddress,
+      pickupLat,
+      setPickupLat,
+      pickupLng,
+      setPickupLng,
+      dropoffAddress,
+      setDropoffAddress,
+      dropoffLat,
+      setDropoffLat,
+      dropoffLng,
+      setDropoffLng,
       date,
       setDate,
       time,
@@ -120,6 +162,12 @@ export function OfferWizardProvider({ children }: { children: React.ReactNode })
     [
       to,
       from,
+      pickupAddress,
+      pickupLat,
+      pickupLng,
+      dropoffAddress,
+      dropoffLat,
+      dropoffLng,
       date,
       time,
       seats,
