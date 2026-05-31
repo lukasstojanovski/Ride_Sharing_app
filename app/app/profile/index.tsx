@@ -23,14 +23,13 @@ import { typography, spacing, radius } from "@/constants/theme";
 const AVATAR_SIZE = 96;
 
 export default function ProfileScreen() {
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deletingAccount, setDeletingAccount] = useState(false);
   const [memberSinceYear, setMemberSinceYear] = useState<number | null>(null);
 
   useEffect(() => {
@@ -124,51 +123,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogOut = async () => {
-    await supabase.auth.signOut();
-    router.replace("/login");
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      t.profile.deleteAccount,
-      language === "mk"
-        ? "Ова ќе ја избрише вашата сметка, е-пошта, лозинка и сите податоци. Нема да можете да се вратите. Дали сте сигурни?"
-        : "This will permanently delete your account, email, password and all saved data. You will not be able to sign in again. Are you sure?",
-      [
-        { text: t.common.cancel, style: "cancel" },
-        {
-          text: t.profile.deleteAccount,
-          style: "destructive",
-          onPress: async () => {
-            setDeletingAccount(true);
-            setError(null);
-            try {
-              const { data, error: fnError } = await supabase.functions.invoke("delete-account");
-              if (fnError) {
-                setError(fnError.message || "Failed to delete account");
-                setDeletingAccount(false);
-                return;
-              }
-              const body = data as { ok?: boolean; message?: string } | null;
-              if (body && !body.ok) {
-                setError(body.message || "Failed to delete account");
-                setDeletingAccount(false);
-                return;
-              }
-              await supabase.auth.signOut();
-              router.replace("/login");
-            } catch (_e) {
-              router.replace("/login");
-            } finally {
-              setDeletingAccount(false);
-            }
-          },
-        },
-      ]
-    );
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -236,29 +190,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          <TouchableOpacity
-            onPress={handleLogOut}
-            style={styles.logOutBtn}
-            activeOpacity={0.8}
-            disabled={deletingAccount}
-          >
-            <View style={styles.logOutBtnContent}>
-              <Ionicons name="log-out-outline" size={22} color={colors.text} />
-              <Text style={styles.logOutBtnText}>{t.home.logOut}</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleDeleteAccount}
-            style={[styles.deleteAccountBtn, deletingAccount && styles.deleteAccountBtnDisabled]}
-            activeOpacity={0.8}
-            disabled={deletingAccount}
-          >
-            <Text style={styles.deleteAccountBtnText}>
-              {deletingAccount ? (language === "mk" ? "Се брише…" : "Deleting…") : t.profile.deleteAccount}
-            </Text>
-          </TouchableOpacity>
         </View>
       </AutoScrollView>
     </SafeAreaView>
@@ -353,41 +284,6 @@ function createStyles(colors: AppColors) {
       color: colors.error,
       fontSize: typography.sizes.sm,
       marginTop: spacing.xs,
-    },
-    logOutBtn: {
-      marginTop: spacing.lg,
-      paddingVertical: spacing.base,
-      paddingHorizontal: spacing.base,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    logOutBtnContent: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.sm,
-    },
-    logOutBtnText: {
-      fontSize: typography.sizes.base,
-      fontWeight: typography.weights.semibold,
-      color: colors.text,
-    },
-    deleteAccountBtn: {
-      marginTop: spacing.base,
-      paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.base,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    deleteAccountBtnDisabled: {
-      opacity: 0.6,
-    },
-    deleteAccountBtnText: {
-      fontSize: typography.sizes.sm,
-      fontWeight: typography.weights.medium,
-      color: colors.error,
     },
   });
 }
