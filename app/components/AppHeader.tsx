@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { colors, typography, spacing, radius } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
+import { typography, spacing, radius } from "@/constants/theme";
 
 interface AppHeaderProps {
   rightElement?: React.ReactNode;
@@ -10,6 +12,9 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ rightElement, showBack, onBack, title }: AppHeaderProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.header}>
       <View style={styles.left}>
@@ -34,46 +39,48 @@ export function AppHeader({ rightElement, showBack, onBack, title }: AppHeaderPr
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: spacing.base,
-    paddingBottom: spacing.xl,
-  },
-  left: { flexDirection: "row", alignItems: "center" },
-  logoRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  logoMark: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoMarkText: { fontSize: 18, fontWeight: "800", color: colors.textInverse },
-  logoText: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.extrabold,
-    color: colors.text,
-    letterSpacing: -0.5,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: -spacing.sm,
-  },
-  backArrow: { fontSize: 20, color: colors.text },
-  headerTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginLeft: spacing.md,
-    flex: 1,
-  },
-  right: {},
-});
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingTop: spacing.base,
+      paddingBottom: spacing.xl,
+    },
+    left: { flexDirection: "row", alignItems: "center" },
+    logoRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    logoMark: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.md,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    logoMarkText: { fontSize: 18, fontWeight: "800", color: colors.textInverse },
+    logoText: {
+      fontSize: typography.sizes.lg,
+      fontWeight: typography.weights.extrabold,
+      color: colors.text,
+      letterSpacing: -0.5,
+    },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      marginLeft: -spacing.sm,
+    },
+    backArrow: { fontSize: 20, color: colors.text },
+    headerTitle: {
+      fontSize: typography.sizes.lg,
+      fontWeight: typography.weights.bold,
+      color: colors.text,
+      marginLeft: spacing.md,
+      flex: 1,
+    },
+    right: {},
+  });
+}

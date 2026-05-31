@@ -1,30 +1,25 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
-  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { Button, OrDivider, LangToggle } from "@/components/AuthComponents";
 import { AutoScrollView } from "@/components/AutoScrollView";
-import {
-  colors,
-  typography,
-  spacing,
-  radius,
-  shadows,
-} from "@/constants/theme";
+import { typography, spacing, radius, shadows } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 
 export default function LoginScreen() {
   const { t, toggleLanguage, language } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
       <AutoScrollView
         contentContainerStyle={styles.scroll}
@@ -92,7 +87,8 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
 
@@ -201,4 +197,5 @@ const styles = StyleSheet.create({
     lineHeight: typography.sizes.xs * 1.7,
   },
   termsLink: { color: colors.primary, fontWeight: typography.weights.medium },
-});
+  });
+}

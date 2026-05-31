@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -18,10 +17,14 @@ import {
   BackButton,
   LangToggle,
 } from "@/components/AuthComponents";
-import { colors, typography, spacing, radius } from "@/constants/theme";
+import { typography, spacing, radius } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 
 export default function RegisterScreen() {
   const { t, toggleLanguage, language } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Passed from email-signup → add-phone → register (phone may be URI-encoded to preserve "+")
   const params = useLocalSearchParams<{
@@ -110,7 +113,6 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.kav}
@@ -192,7 +194,8 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   kav: { flex: 1 },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
@@ -284,4 +287,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: typography.sizes.sm * 1.6,
   },
-});
+  });
+}

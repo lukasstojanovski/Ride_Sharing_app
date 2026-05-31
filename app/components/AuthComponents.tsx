@@ -17,7 +17,14 @@ import {
 import { supabase } from '@/lib/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
-import { colors, typography, spacing, radius, shadows, MAX_SEATS } from '@/constants/theme';
+import { typography, spacing, radius, shadows, MAX_SEATS } from '@/constants/theme';
+import { useTheme } from '@/lib/ThemeContext';
+import type { AppColors } from '@/constants/colorPalettes';
+
+function useAuthStyles() {
+  const { colors } = useTheme();
+  return useMemo(() => createAuthStyles(colors), [colors]);
+}
 
 // ─── Button ───────────────────────────────────────────────────────────────────
 
@@ -34,6 +41,8 @@ interface ButtonProps {
 export const Button: React.FC<ButtonProps> = ({
   label, onPress, loading = false, disabled = false, variant = 'primary', icon, style,
 }) => {
+  const { colors } = useTheme();
+  const styles = useAuthStyles();
   const isPrimary = variant === 'primary';
   return (
     <TouchableOpacity
@@ -73,6 +82,7 @@ interface SeatsStepperProps {
 }
 
 export const SeatsStepper: React.FC<SeatsStepperProps> = ({ label, value, onChange, error }) => {
+  const styles = useAuthStyles();
   const min = 1;
   const max = MAX_SEATS;
   return (
@@ -121,6 +131,7 @@ export const SeatsPickerInput: React.FC<SeatsPickerInputProps> = ({
   error,
   onOpenChange,
 }) => {
+  const styles = useAuthStyles();
   const [show, setShow] = useState(false);
   const [draft, setDraft] = useState(1);
   const num = Math.min(MAX_SEATS, Math.max(1, parseInt(value, 10) || 1));
@@ -158,7 +169,6 @@ export const SeatsPickerInput: React.FC<SeatsPickerInputProps> = ({
         if (Platform.OS === 'android') setDraft(n);
         else handleIosValueChange(n);
       }}
-      themeVariant="light"
       style={styles.seatsPicker}
       itemStyle={styles.seatsPickerItem}
     >
@@ -219,7 +229,10 @@ interface PhoneInputProps {
 
 export const PhoneInput: React.FC<PhoneInputProps> = ({
   value, onChangeText, countryCode = '+389', placeholder = '07X XXX XXX', autoFocus = false, error,
-}) => (
+}) => {
+  const { colors } = useTheme();
+  const styles = useAuthStyles();
+  return (
   <View>
     <View style={[styles.phoneContainer, error ? styles.fieldError : null]}>
       <View style={styles.countryCode}>
@@ -239,7 +252,8 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
     </View>
     {error ? <Text style={styles.errorText}>{error}</Text> : null}
   </View>
-);
+  );
+};
 
 // ─── Text Input ───────────────────────────────────────────────────────────────
 
@@ -249,7 +263,10 @@ interface InputProps extends TextInputProps {
   rightElement?: React.ReactNode;  // e.g. show/hide password button
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, style, rightElement, ...props }) => (
+export const Input: React.FC<InputProps> = ({ label, error, style, rightElement, ...props }) => {
+  const { colors } = useTheme();
+  const styles = useAuthStyles();
+  return (
   <View style={styles.inputWrapper}>
     {label ? <Text style={styles.label}>{label}</Text> : null}
     <View style={[styles.inputRow, error ? styles.fieldError : null]}>
@@ -262,7 +279,8 @@ export const Input: React.FC<InputProps> = ({ label, error, style, rightElement,
     </View>
     {error ? <Text style={styles.errorText}>{error}</Text> : null}
   </View>
-);
+  );
+};
 
 // ─── City Picker Input (searchable dropdown, value only from list) ─────────────
 
@@ -281,6 +299,8 @@ export const CityPickerInput: React.FC<CityPickerInputProps> = ({
   placeholder = 'Select city',
   error,
 }) => {
+  const { colors } = useTheme();
+  const styles = useAuthStyles();
   const [inputValue, setInputValue] = useState(value);
   const [showDropdown, setShowDropdown] = useState(false);
   const [cities, setCities] = useState<string[]>([]);
@@ -448,6 +468,8 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
   showTodayLabel = false,
   leftElement,
 }) => {
+  const { colors, resolvedScheme } = useTheme();
+  const styles = useAuthStyles();
   const [show, setShow] = useState(false);
   const todayYMD = toYMD(new Date());
   const isTodaySelected = value === todayYMD;
@@ -503,7 +525,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleChange}
           minimumDate={minimumDate}
-          themeVariant="light"
+          themeVariant={resolvedScheme}
           {...(Platform.OS === 'ios' && { textColor: colors.text })}
           {...(Platform.OS === 'android' && { accentColor: colors.primary })}
         />
@@ -565,6 +587,8 @@ export const TimePickerInput: React.FC<TimePickerInputProps> = ({
   placeholder = 'Select time',
   error,
 }) => {
+  const { colors, resolvedScheme } = useTheme();
+  const styles = useAuthStyles();
   const [show, setShow] = useState(false);
   const handleOpen = () => setShow((prev) => !prev);
   const rawTimeValue = value && /^\d{1,2}:\d{2}$/.test(value)
@@ -605,13 +629,13 @@ export const TimePickerInput: React.FC<TimePickerInputProps> = ({
           minuteInterval={TIME_MINUTE_INTERVAL}
           onChange={handleChange}
           is24Hour
-          themeVariant="light"
+          themeVariant={resolvedScheme}
           {...(Platform.OS === 'ios' && { textColor: colors.text })}
           {...(Platform.OS === 'android' && { accentColor: colors.primary })}
         />
       )}
       {show && Platform.OS === 'ios' && (
-        <TouchableOpacity onPress={() => setShow(false)} style={styles.datePickerDone}>
+        <TouchableOpacity onPress={() => setShow(false)} style={styles.datePickerDoneBtn}>
           <Text style={styles.datePickerDoneText}>Done</Text>
         </TouchableOpacity>
       )}
@@ -629,6 +653,7 @@ interface OtpInputProps {
 }
 
 export const OtpInput: React.FC<OtpInputProps> = ({ value, onChange, length = 6, error = false }) => {
+  const styles = useAuthStyles();
   const digits = value.split('').concat(Array(length).fill('')).slice(0, length);
   return (
     <View style={styles.otpRow}>
@@ -659,13 +684,16 @@ export const OtpInput: React.FC<OtpInputProps> = ({ value, onChange, length = 6,
 
 // ─── Or Divider ───────────────────────────────────────────────────────────────
 
-export const OrDivider: React.FC<{ label: string }> = ({ label }) => (
+export const OrDivider: React.FC<{ label: string }> = ({ label }) => {
+  const styles = useAuthStyles();
+  return (
   <View style={styles.orRow}>
     <View style={styles.orLine} />
     <Text style={styles.orText}>{label}</Text>
     <View style={styles.orLine} />
   </View>
-);
+  );
+};
 
 // ─── Language Toggle ──────────────────────────────────────────────────────────
 
@@ -675,6 +703,7 @@ const LANG_THUMB_WIDTH = (LANG_TRACK_WIDTH - LANG_THUMB_OFFSET * 2) / 2;
 const LANG_THUMB_SLIDE = LANG_THUMB_WIDTH;
 
 export const LangToggle: React.FC<{ language: 'en' | 'mk'; onToggle: () => void }> = ({ language, onToggle }) => {
+  const styles = useAuthStyles();
   const slideAnim = useRef(new Animated.Value(language === 'mk' ? 0 : LANG_THUMB_SLIDE)).current;
 
   useEffect(() => {
@@ -710,7 +739,9 @@ export const LangToggle: React.FC<{ language: 'en' | 'mk'; onToggle: () => void 
 
 // ─── Back Button ──────────────────────────────────────────────────────────────
 
-export const BackButton: React.FC<{ onPress: () => void }> = ({ onPress }) => (
+export const BackButton: React.FC<{ onPress: () => void }> = ({ onPress }) => {
+  const styles = useAuthStyles();
+  return (
   <TouchableOpacity
     onPress={onPress}
     style={styles.backBtn}
@@ -718,11 +749,13 @@ export const BackButton: React.FC<{ onPress: () => void }> = ({ onPress }) => (
   >
     <Text style={styles.backArrow}>←</Text>
   </TouchableOpacity>
-);
+  );
+};
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function createAuthStyles(colors: AppColors) {
+  return StyleSheet.create({
   btn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -970,4 +1003,5 @@ const styles = StyleSheet.create({
     marginLeft: -spacing.sm,
   },
   backArrow: { fontSize: 20, color: colors.text },
-});
+  });
+}

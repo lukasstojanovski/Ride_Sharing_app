@@ -4,6 +4,7 @@ import { Slot, useRouter, useSegments } from "expo-router";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { I18nProvider } from "../lib/i18n";
+import { ThemeProvider } from "../lib/ThemeContext";
 import { UnreadNotificationsProvider } from "../lib/UnreadNotificationsContext";
 import { UnreadInboxProvider } from "../lib/UnreadInboxContext";
 import { registerPushToken } from "../lib/registerPushToken";
@@ -91,7 +92,9 @@ function AuthGate() {
 export default function RootLayout() {
   return (
     <I18nProvider>
-      <AuthGate />
+      <ThemeProvider>
+        <AuthGate />
+      </ThemeProvider>
     </I18nProvider>
   );
 }

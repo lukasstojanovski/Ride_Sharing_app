@@ -1,14 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   View,
   Text,
   StyleSheet,
-  
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  StatusBar,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,7 +15,9 @@ import { AutoScrollView } from "@/components/AutoScrollView";
 import { Button } from "@/components/AuthComponents";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, typography, spacing, radius } from "@/constants/theme";
+import { typography, spacing, radius } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 
 type Trip = {
   id: string;
@@ -54,6 +54,8 @@ type ReservationWithPassenger = {
 
 export default function MyTripsScreen() {
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<"driving" | "riding">(
     tab === "riding" ? "riding" : "driving"
@@ -267,7 +269,6 @@ export default function MyTripsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -277,7 +278,6 @@ export default function MyTripsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <View style={styles.headerWrap}>
         <AppHeader />
       </View>
@@ -496,7 +496,8 @@ export default function MyTripsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   headerWrap: { paddingHorizontal: spacing.xl },
   container: { flex: 1 },
@@ -599,4 +600,5 @@ const styles = StyleSheet.create({
   pickupBtn: { marginTop: spacing.sm },
   cancelBtn: { marginTop: spacing.md },
   cancelResBtn: { marginTop: spacing.md },
-});
+  });
+}

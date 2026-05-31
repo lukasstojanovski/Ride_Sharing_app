@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -16,7 +14,9 @@ import { AutoScrollView } from "@/components/AutoScrollView";
 import { useUnreadNotifications } from "@/lib/UnreadNotificationsContext";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, typography, spacing, radius } from "@/constants/theme";
+import { typography, spacing, radius } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 
 type Notification = {
   id: string;
@@ -31,6 +31,8 @@ type Notification = {
 
 export default function NotificationsScreen() {
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { refresh } = useUnreadNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,7 +112,6 @@ export default function NotificationsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -120,7 +121,6 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <AutoScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -164,7 +164,8 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
@@ -213,4 +214,5 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
     color: colors.textMuted,
   },
-});
+  });
+}

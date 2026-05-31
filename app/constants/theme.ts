@@ -1,24 +1,5 @@
-export const colors = {
-  primary: "#2563EB",
-  primaryDark: "#1D4ED8",
-  primaryLight: "#DBEAFE",
-  accent: "#F59E0B",
-
-  background: "#FFFFFF",
-  surface: "#F8FAFC",
-  surfaceAlt: "#F1F5F9",
-  border: "#E2E8F0",
-  borderLight: "#F1F5F9",
-
-  text: "#0F172A",
-  textSecondary: "#64748B",
-  textMuted: "#94A3B8",
-  textInverse: "#FFFFFF",
-
-  success: "#10B981",
-  error: "#EF4444",
-  errorLight: "#FEF2F2",
-};
+export type { AppColors } from "./colorPalettes";
+export { lightColors, darkColors } from "./colorPalettes";
 
 export const typography = {
   sizes: {

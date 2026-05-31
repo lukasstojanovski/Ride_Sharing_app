@@ -1,15 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
   KeyboardAvoidingView,
   Platform,
   TextInput,
   TouchableOpacity,
-  
   Modal,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -17,7 +15,9 @@ import { supabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
 import { AutoFlatList } from "@/components/AutoFlatList";
 import { Button, BackButton, LangToggle } from "@/components/AuthComponents";
-import { colors, typography, spacing, radius } from "@/constants/theme";
+import { typography, spacing, radius } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 import {
   europeanCountries,
   defaultCountry,
@@ -29,6 +29,8 @@ const isSignupFlow = (fromSignup: string | undefined, email: string | undefined)
 
 export default function AddPhoneScreen() {
   const { t, toggleLanguage, language } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { email, password, fromSignup } = useLocalSearchParams<{
     email?: string;
     password?: string;
@@ -107,7 +109,6 @@ export default function AddPhoneScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.kav}
@@ -249,7 +250,8 @@ export default function AddPhoneScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   kav: { flex: 1 },
   container: { flex: 1, paddingHorizontal: spacing.xl },
@@ -417,4 +419,5 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.medium,
   },
   countryCheck: { fontSize: 16, color: colors.primary, fontWeight: "bold" },
-});
+  });
+}

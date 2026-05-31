@@ -4,7 +4,6 @@ import {
   
   KeyboardAvoidingView,
   Platform,
-  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,19 +12,20 @@ import { Button, DatePickerInput, TimePickerInput } from "@/components/AuthCompo
 import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
 import { useOfferWizard } from "./OfferWizardContext";
-import { stepStyles } from "./stepStyles";
+import { useOfferStepStyles } from "./stepStyles";
 
 export default function OfferWhenScreen() {
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const stepStyles = useOfferStepStyles();
   const { date, setDate, time, setTime } = useOfferWizard();
 
   const canNext = date.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date.trim()) && time.trim().length > 0;
 
   return (
     <SafeAreaView style={stepStyles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={stepStyles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}

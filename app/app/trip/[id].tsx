@@ -1,14 +1,12 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  
   TouchableOpacity,
   ActivityIndicator,
   Modal,
   TextInput,
-  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -17,7 +15,9 @@ import { AutoScrollView } from "@/components/AutoScrollView";
 import { Button } from "@/components/AuthComponents";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, typography, spacing, radius } from "@/constants/theme";
+import { typography, spacing, radius } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 
 type Trip = {
   id: string;
@@ -40,6 +40,8 @@ type Trip = {
 
 export default function TripDetailsScreen() {
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
@@ -142,7 +144,6 @@ export default function TripDetailsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -153,7 +154,6 @@ export default function TripDetailsScreen() {
   if (error && !trip) {
     return (
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity onPress={() => router.back()}>
@@ -168,7 +168,6 @@ export default function TripDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <AutoScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -317,7 +316,8 @@ export default function TripDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
   content: { padding: spacing.xl, paddingBottom: spacing["3xl"] },
@@ -422,4 +422,5 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   modalBtn: { flex: 1 },
-});
+  });
+}

@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
   TouchableOpacity,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -16,12 +15,16 @@ import {
   BackButton,
   LangToggle,
 } from "../../components/AuthComponents";
-import { colors, typography, spacing } from "../../constants/theme";
+import { typography, spacing } from "../../constants/theme";
+import { useTheme } from "../../lib/ThemeContext";
+import type { AppColors } from "../../constants/colorPalettes";
 
 const RESEND_SECONDS = 60;
 
 export default function OtpScreen() {
   const { t, toggleLanguage, language } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Params passed from phone.tsx via router.push
   const { phone, displayPhone } = useLocalSearchParams<{
@@ -94,7 +97,6 @@ export default function OtpScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <View style={styles.container}>
         <View style={styles.topBar}>
           <BackButton onPress={() => router.back()} />
@@ -148,7 +150,8 @@ export default function OtpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1, paddingHorizontal: spacing.xl },
   topBar: {
@@ -205,4 +208,5 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   footer: { paddingBottom: spacing.xl },
-});
+  });
+}

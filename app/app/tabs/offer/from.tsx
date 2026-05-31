@@ -4,7 +4,6 @@ import {
   
   KeyboardAvoidingView,
   Platform,
-  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -12,12 +11,12 @@ import { Button, CityPickerInput } from "@/components/AuthComponents";
 import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors } from "@/constants/theme";
 import { useOfferWizard } from "./OfferWizardContext";
-import { stepStyles } from "./stepStyles";
+import { useOfferStepStyles } from "./stepStyles";
 
 export default function OfferWhereFromScreen() {
   const { t } = useI18n();
+  const stepStyles = useOfferStepStyles();
   const { from, setFrom, to, setError, error } = useOfferWizard();
 
   const goNext = () => {
@@ -37,7 +36,6 @@ export default function OfferWhereFromScreen() {
 
   return (
     <SafeAreaView style={stepStyles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={stepStyles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}

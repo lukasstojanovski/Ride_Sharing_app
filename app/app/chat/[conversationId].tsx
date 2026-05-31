@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   Platform,
-  StatusBar,
   Pressable,
   Image,
   Dimensions,
@@ -25,7 +24,9 @@ import { useUnreadInbox } from "@/lib/UnreadInboxContext";
 import { AutoFlatList } from "@/components/AutoFlatList";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
+import { typography, spacing, radius, shadows } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 
 type SenderProfile = {
   first_name: string | null;
@@ -64,6 +65,8 @@ type ConversationWithTrip = {
 
 export default function ChatScreen() {
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const { refresh } = useUnreadInbox();
 
@@ -570,7 +573,6 @@ export default function ChatScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -581,7 +583,6 @@ export default function ChatScreen() {
   if (!conversation) {
     return (
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.centered}>
           <Text style={styles.errorText}>Conversation not found</Text>
           <TouchableOpacity onPress={() => router.replace("/tabs/inbox")}>
@@ -594,8 +595,6 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -685,7 +684,8 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   container: { flex: 1 },
   centered: {
@@ -894,4 +894,5 @@ const styles = StyleSheet.create({
   sendBtnDisabled: {
     opacity: 0.4,
   },
-});
+  });
+}

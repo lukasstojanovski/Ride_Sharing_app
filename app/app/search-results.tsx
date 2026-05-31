@@ -1,12 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  
   TouchableOpacity,
   ActivityIndicator,
-  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -14,7 +12,9 @@ import { supabase } from "@/lib/supabase";
 import { AutoFlatList } from "@/components/AutoFlatList";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, typography, spacing, radius, shadows, MAX_SEATS } from "@/constants/theme";
+import { typography, spacing, radius, shadows, MAX_SEATS } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 
 type TripRow = {
   id: string;
@@ -29,6 +29,8 @@ type TripRow = {
 
 export default function SearchResultsScreen() {
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { from, to, date, seats } = useLocalSearchParams<{
     from: string;
     to: string;
@@ -102,7 +104,6 @@ export default function SearchResultsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.centeredText}>{t.search.loading}</Text>
@@ -114,7 +115,6 @@ export default function SearchResultsScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity onPress={() => router.back()}>
@@ -127,7 +127,6 @@ export default function SearchResultsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <View style={styles.headerWrap}>
         <AppHeader
           showBack
@@ -177,7 +176,8 @@ export default function SearchResultsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   headerWrap: { paddingHorizontal: spacing.xl },
   centered: {
@@ -232,4 +232,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.md,
   },
-});
+  });
+}

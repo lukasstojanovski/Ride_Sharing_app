@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, KeyboardAvoidingView, Platform, StatusBar, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Location from "expo-location";
@@ -8,9 +13,8 @@ import { GoogleMapView } from "@/components/GoogleMapView";
 import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, radius, spacing, typography } from "@/constants/theme";
 import { useOfferWizard } from "./OfferWizardContext";
-import { stepStyles } from "./stepStyles";
+import { useOfferStepStyles, useOfferMapStyles } from "./stepStyles";
 
 type Region = {
   latitude: number;
@@ -28,6 +32,8 @@ const FALLBACK_REGION: Region = {
 
 export default function OfferPickupScreen() {
   const { t } = useI18n();
+  const stepStyles = useOfferStepStyles();
+  const styles = useOfferMapStyles();
   const {
     from,
     pickupAddress,
@@ -121,7 +127,6 @@ export default function OfferPickupScreen() {
 
   return (
     <SafeAreaView style={stepStyles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={stepStyles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -175,35 +180,3 @@ export default function OfferPickupScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  mapWrap: {
-    height: 320,
-    borderRadius: radius.xl,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  mapLoading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mapLoadingText: {
-    color: colors.textMuted,
-    fontSize: typography.sizes.sm,
-    textAlign: "center",
-    marginBottom: spacing.sm,
-  },
-  pickupLabel: {
-    marginTop: spacing.sm,
-    color: colors.textSecondary,
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-  },
-  pickupValue: {
-    color: colors.text,
-    fontSize: typography.sizes.base,
-  },
-});

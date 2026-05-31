@@ -4,7 +4,6 @@ import {
   
   KeyboardAvoidingView,
   Platform,
-  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,17 +12,19 @@ import { Button, SeatsPickerInput } from "@/components/AuthComponents";
 import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, MAX_SEATS } from "@/constants/theme";
+import { MAX_SEATS } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
 import { useOfferWizard } from "./OfferWizardContext";
-import { stepStyles } from "./stepStyles";
+import { useOfferStepStyles } from "./stepStyles";
 
 export default function OfferSeatsScreen() {
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const stepStyles = useOfferStepStyles();
   const { seats, setSeats } = useOfferWizard();
 
   return (
     <SafeAreaView style={stepStyles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={stepStyles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}

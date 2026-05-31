@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing } from "@/constants/theme";
+import { typography, spacing } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
 import { useI18n } from "@/lib/i18n";
 import { useUnreadNotifications } from "@/lib/UnreadNotificationsContext";
 import { useUnreadInbox } from "@/lib/UnreadInboxContext";
@@ -15,6 +16,7 @@ const iconMap: Record<string, { active: string; inactive: string }> = {
 
 export default function TabsLayout() {
   const { t } = useI18n();
+  const { colors } = useTheme();
   const { count: unreadCount } = useUnreadNotifications();
   const { count: unreadInboxCount } = useUnreadInbox();
   const notificationsBadge = unreadCount > 0 ? (unreadCount > 99 ? "+99" : String(unreadCount)) : undefined;

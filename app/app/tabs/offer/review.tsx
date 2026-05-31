@@ -1,17 +1,21 @@
-import { View, Text, KeyboardAvoidingView, Platform, StatusBar, StyleSheet } from "react-native";
+import { useMemo } from "react";
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Button } from "@/components/AuthComponents";
 import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, MAX_SEATS, spacing, typography } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
+import { MAX_SEATS, spacing, typography } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useOfferWizard } from "./OfferWizardContext";
-import { stepStyles } from "./stepStyles";
+import { useOfferStepStyles } from "./stepStyles";
 
 export default function OfferReviewScreen() {
   const { t } = useI18n();
+  const stepStyles = useOfferStepStyles();
   const {
     from,
     to,
@@ -124,7 +128,6 @@ export default function OfferReviewScreen() {
   if (success) {
     return (
       <SafeAreaView style={stepStyles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={stepStyles.centered}>
           <Text style={stepStyles.successText}>{t.offer.success}</Text>
           <Text style={stepStyles.successSub}>{t.offer.successSub}</Text>
@@ -135,7 +138,6 @@ export default function OfferReviewScreen() {
 
   return (
     <SafeAreaView style={stepStyles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={stepStyles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -187,6 +189,8 @@ export default function OfferReviewScreen() {
 }
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createReviewRowStyles(colors), [colors]);
   return (
     <View style={styles.row}>
       <Text style={styles.label}>{label}</Text>
@@ -195,21 +199,23 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    paddingBottom: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  label: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    marginBottom: 2,
-  },
-  value: {
-    fontSize: typography.sizes.base,
-    color: colors.text,
-    fontWeight: typography.weights.medium,
-  },
-});
+function createReviewRowStyles(colors: AppColors) {
+  return StyleSheet.create({
+    row: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      paddingBottom: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    label: {
+      fontSize: typography.sizes.sm,
+      color: colors.textSecondary,
+      marginBottom: 2,
+    },
+    value: {
+      fontSize: typography.sizes.base,
+      color: colors.text,
+      fontWeight: typography.weights.medium,
+    },
+  });
+}

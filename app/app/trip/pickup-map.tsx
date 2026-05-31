@@ -1,14 +1,19 @@
-import { View, Text, StyleSheet, StatusBar, Linking } from "react-native";
+import { useMemo } from "react";
+import { View, Text, StyleSheet, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/AuthComponents";
 import { GoogleMapView } from "@/components/GoogleMapView";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { radius, spacing, typography } from "@/constants/theme";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 
 export default function PickupMapScreen() {
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const params = useLocalSearchParams<{
     lat?: string;
     lng?: string;
@@ -31,7 +36,6 @@ export default function PickupMapScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <View style={styles.content}>
         <AppHeader showBack onBack={() => router.back()} />
         <View style={styles.mapWrap}>
@@ -70,46 +74,48 @@ export default function PickupMapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  content: { flex: 1, padding: spacing.xl },
-  mapWrap: {
-    height: "58%",
-    borderRadius: radius.xl,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  mapFallback: { flex: 1, justifyContent: "center", alignItems: "center" },
-  fallbackText: {
-    fontSize: typography.sizes.base,
-    color: colors.textMuted,
-    textAlign: "center",
-    marginBottom: spacing.sm,
-  },
-  card: {
-    marginTop: spacing.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-  },
-  label: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  value: {
-    fontSize: typography.sizes.base,
-    color: colors.text,
-    fontWeight: typography.weights.medium,
-  },
-  cityLabel: {
-    marginTop: spacing.md,
-  },
-  mapsBtn: {
-    marginTop: spacing.lg,
-  },
-});
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.background },
+    content: { flex: 1, padding: spacing.xl },
+    mapWrap: {
+      height: "58%",
+      borderRadius: radius.xl,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    mapFallback: { flex: 1, justifyContent: "center", alignItems: "center" },
+    fallbackText: {
+      fontSize: typography.sizes.base,
+      color: colors.textMuted,
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    card: {
+      marginTop: spacing.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      backgroundColor: colors.surface,
+    },
+    label: {
+      fontSize: typography.sizes.sm,
+      color: colors.textSecondary,
+      marginBottom: spacing.xs,
+    },
+    value: {
+      fontSize: typography.sizes.base,
+      color: colors.text,
+      fontWeight: typography.weights.medium,
+    },
+    cityLabel: {
+      marginTop: spacing.md,
+    },
+    mapsBtn: {
+      marginTop: spacing.lg,
+    },
+  });
+}

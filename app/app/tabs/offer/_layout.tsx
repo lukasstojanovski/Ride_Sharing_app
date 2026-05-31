@@ -1,12 +1,13 @@
 import { useCallback } from "react";
 import { Stack, useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import { colors } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
 import { OfferWizardProvider, useOfferWizard } from "./OfferWizardContext";
 
 function OfferStackWithTabReset() {
   const { stackKey, resetWizard, remountStack } = useOfferWizard();
   const router = useRouter();
+  const { colors } = useTheme();
 
   useFocusEffect(
     useCallback(() => {

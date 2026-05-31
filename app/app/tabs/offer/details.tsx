@@ -3,7 +3,6 @@ import {
   Text,
   KeyboardAvoidingView,
   Platform,
-  StatusBar,
   Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,12 +11,15 @@ import { Button, Input } from "@/components/AuthComponents";
 import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, MAX_SEATS } from "@/constants/theme";
+import { MAX_SEATS } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
 import { useOfferWizard } from "./OfferWizardContext";
-import { stepStyles } from "./stepStyles";
+import { useOfferStepStyles } from "./stepStyles";
 
 export default function OfferDetailsScreen() {
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const stepStyles = useOfferStepStyles();
   const {
     from,
     to,
@@ -83,7 +85,6 @@ export default function OfferDetailsScreen() {
 
   return (
     <SafeAreaView style={stepStyles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={stepStyles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}

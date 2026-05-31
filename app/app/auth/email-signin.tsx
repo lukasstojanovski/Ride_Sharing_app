@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
@@ -20,10 +19,14 @@ import {
   BackButton,
   LangToggle,
 } from "@/components/AuthComponents";
-import { colors, typography, spacing } from "@/constants/theme";
+import { typography, spacing } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 
 export default function EmailSigninScreen() {
   const { t, toggleLanguage, language } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,7 +61,6 @@ export default function EmailSigninScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.kav}
@@ -143,7 +145,8 @@ export default function EmailSigninScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   kav: { flex: 1 },
   scroll: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
@@ -197,4 +200,5 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.semibold,
     color: colors.primary,
   },
-});
+  });
+}

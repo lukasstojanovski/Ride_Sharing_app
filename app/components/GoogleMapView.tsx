@@ -1,6 +1,9 @@
+import { useMemo } from "react";
 import { Platform, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
-import { colors, typography } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
+import { typography } from "@/constants/theme";
 
 const DEFAULT_DELTA = 0.05;
 
@@ -23,6 +26,9 @@ export function GoogleMapView({
   onLocationChange,
   style,
 }: GoogleMapViewProps) {
+  const { colors, resolvedScheme } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   if (Platform.OS === "web") {
     return (
       <View style={[styles.unavailable, style]}>
@@ -43,6 +49,7 @@ export function GoogleMapView({
       provider={PROVIDER_GOOGLE}
       style={[styles.map, style]}
       region={region}
+      userInterfaceStyle={resolvedScheme}
       onPress={
         interactive && onLocationChange
           ? (event) => {
@@ -68,20 +75,22 @@ export function GoogleMapView({
   );
 }
 
-const styles = StyleSheet.create({
-  map: {
-    flex: 1,
-  },
-  unavailable: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.surface,
-  },
-  unavailableText: {
-    color: colors.textMuted,
-    fontSize: typography.sizes.sm,
-    textAlign: "center",
-    paddingHorizontal: 16,
-  },
-});
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    map: {
+      flex: 1,
+    },
+    unavailable: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.surface,
+    },
+    unavailableText: {
+      color: colors.textMuted,
+      fontSize: typography.sizes.sm,
+      textAlign: "center",
+      paddingHorizontal: 16,
+    },
+  });
+}

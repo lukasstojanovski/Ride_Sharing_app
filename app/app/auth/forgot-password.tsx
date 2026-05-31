@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -18,10 +17,14 @@ import {
   BackButton,
   LangToggle,
 } from "@/components/AuthComponents";
-import { colors, typography, spacing } from "@/constants/theme";
+import { typography, spacing } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 
 export default function ForgotPasswordScreen() {
   const { t, toggleLanguage, language } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,7 +55,6 @@ export default function ForgotPasswordScreen() {
   if (sent) {
     return (
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.sentContainer}>
           <View style={styles.topBar}>
             <BackButton onPress={() => router.back()} />
@@ -72,7 +74,6 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.kav}
@@ -122,7 +123,8 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   kav: { flex: 1 },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: spacing["3xl"] },
@@ -177,4 +179,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: spacing["2xl"],
   },
-});
+  });
+}

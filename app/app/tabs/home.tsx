@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  StatusBar,
   Image,
   Modal,
   Pressable,
@@ -17,7 +16,9 @@ import { Button, DatePickerInput, CityPickerInput, SeatsPickerInput } from "@/co
 import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
-import { colors, typography, spacing, radius, shadows } from "@/constants/theme";
+import { typography, spacing, radius, shadows } from "@/constants/theme";
+import { useTheme } from "@/lib/ThemeContext";
+import type { AppColors } from "@/constants/colorPalettes";
 import { getRecentSearches, addRecentSearch, getUniqueRoutes } from "@/lib/recentSearches";
 
 const PROFILE_ICON_SIZE = 36;
@@ -25,6 +26,8 @@ const MAX_VISIBLE_RECENT_ROUTES = 4;
 
 export default function HomeScreen() {
   const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [date, setDate] = useState(() => {
@@ -118,7 +121,6 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <AutoScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -252,7 +254,8 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
   content: {
@@ -365,4 +368,5 @@ const styles = StyleSheet.create({
   dateModalShowBtn: {
     marginTop: spacing.lg,
   },
-});
+  });
+}
