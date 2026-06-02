@@ -217,6 +217,7 @@ export default function TripDetailsScreen() {
                 address: trip.pickup_address ?? "",
                 fromCity: trip.from_city,
                 mode: "pickup",
+                returnTo: `/trip/${id}`,
               },
             })
           }
@@ -236,6 +237,7 @@ export default function TripDetailsScreen() {
                 address: trip.dropoff_address ?? "",
                 fromCity: trip.to_city,
                 mode: "dropoff",
+                returnTo: `/trip/${id}`,
               },
             })
           }

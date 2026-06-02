@@ -20,6 +20,7 @@ export default function PickupMapScreen() {
     address?: string;
     fromCity?: string;
     mode?: "pickup" | "dropoff";
+    returnTo?: string;
   }>();
   const latitude = Number(params.lat);
   const longitude = Number(params.lng);
@@ -34,10 +35,19 @@ export default function PickupMapScreen() {
     await Linking.openURL(url);
   };
 
+  const handleBack = () => {
+    const returnTo = params.returnTo?.trim();
+    if (returnTo?.startsWith("/")) {
+      router.replace(returnTo);
+      return;
+    }
+    router.back();
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.content}>
-        <AppHeader showBack onBack={() => router.back()} />
+        <AppHeader showBack onBack={handleBack} />
         <View style={styles.mapWrap}>
           {hasCoords ? (
             <GoogleMapView latitude={latitude} longitude={longitude} />

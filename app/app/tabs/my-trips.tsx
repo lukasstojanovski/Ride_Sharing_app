@@ -206,6 +206,9 @@ export default function MyTripsScreen() {
   const hasAcceptedReservation = (tripId: string) =>
     (reservationsByTrip[tripId] || []).some((r) => r.status === "accepted");
 
+  const myTripsReturnTo =
+    activeTab === "riding" ? "/tabs/my-trips?tab=riding" : "/tabs/my-trips";
+
   const goToPickupMap = (trip: Trip) => {
     if (trip.pickup_lat === null || trip.pickup_lng === null) return;
     router.push({
@@ -216,6 +219,7 @@ export default function MyTripsScreen() {
         address: trip.pickup_address ?? "",
         fromCity: trip.from_city,
         mode: "pickup",
+        returnTo: myTripsReturnTo,
       },
     });
   };
@@ -230,6 +234,7 @@ export default function MyTripsScreen() {
         address: trip.dropoff_address ?? "",
         fromCity: trip.to_city,
         mode: "dropoff",
+        returnTo: myTripsReturnTo,
       },
     });
   };
