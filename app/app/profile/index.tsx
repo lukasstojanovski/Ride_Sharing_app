@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,22 +15,36 @@ import { decode } from "base64-arraybuffer";
 import { supabase } from "@/lib/supabase";
 import { AutoScrollView } from "@/components/AutoScrollView";
 import { AppHeader } from "@/components/AppHeader";
+import { ProfileInfoField } from "@/components/ProfileInfoField";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/ThemeContext";
+import { capitalizeName } from "@/lib/formatName";
+import { requestPhoneNumberChange } from "@/lib/profilePhoneChange";
 import type { AppColors } from "@/constants/colorPalettes";
 import { typography, spacing, radius } from "@/constants/theme";
 
 const AVATAR_SIZE = 96;
+
+type EditableField = "firstName" | "lastName";
 
 export default function ProfileScreen() {
   const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [memberSinceYear, setMemberSinceYear] = useState<number | null>(null);
+  const [editingField, setEditingField] = useState<EditableField | null>(null);
+  const [draftFirstName, setDraftFirstName] = useState("");
+  const [draftLastName, setDraftLastName] = useState("");
+  const [savingField, setSavingField] = useState<EditableField | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -44,14 +58,29 @@ export default function ProfileScreen() {
       if (user.created_at) {
         setMemberSinceYear(new Date(user.created_at).getFullYear());
       }
+      setEmail(user.email ?? "");
+
       const { data } = await supabase
         .from("profiles")
-        .select("avatar_url")
+        .select("avatar_url, first_name, last_name, phone, email, phone_verified")
         .eq("id", user.id)
         .single();
+
       if (data) {
-        const row = data as { avatar_url?: string | null };
+        const row = data as {
+          avatar_url?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          phone_verified?: boolean;
+        };
         setAvatarUrl(row.avatar_url ?? null);
+        setFirstName(row.first_name?.trim() ?? "");
+        setLastName(row.last_name?.trim() ?? "");
+        setPhone(row.phone?.trim() ?? "");
+        if (row.email?.trim()) setEmail(row.email.trim());
+        setPhoneVerified(row.phone_verified ?? false);
       }
       setLoading(false);
     })();
@@ -123,6 +152,61 @@ export default function ProfileScreen() {
     }
   };
 
+  const startEdit = useCallback(
+    (field: EditableField) => {
+      if (savingField) return;
+      setEditingField(field);
+      if (field === "firstName") setDraftFirstName(firstName);
+      else setDraftLastName(lastName);
+      setError(null);
+    },
+    [firstName, lastName, savingField]
+  );
+
+  const saveField = useCallback(
+    async (field: EditableField) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const raw = field === "firstName" ? draftFirstName : draftLastName;
+      const formatted = capitalizeName(raw.trim());
+      const nextFirst = field === "firstName" ? formatted : firstName;
+      const nextLast = field === "lastName" ? formatted : lastName;
+      const fullName = [nextFirst, nextLast].filter(Boolean).join(" ").trim() || null;
+
+      setSavingField(field);
+      setError(null);
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          first_name: nextFirst || null,
+          last_name: nextLast || null,
+          full_name: fullName,
+        })
+        .eq("id", user.id);
+
+      setSavingField(null);
+      if (updateError) {
+        setError(updateError.message || t.profile.saveError);
+        return;
+      }
+
+      setFirstName(nextFirst);
+      setLastName(nextLast);
+      setEditingField(null);
+    },
+    [draftFirstName, draftLastName, firstName, lastName, t.profile.saveError]
+  );
+
+  const handlePhonePress = useCallback(() => {
+    requestPhoneNumberChange(
+      (title, message) => Alert.alert(title, message),
+      t.profile
+    );
+  }, [t.profile]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -176,6 +260,46 @@ export default function ProfileScreen() {
               {t.profile.memberSince} {memberSinceYear}
             </Text>
           ) : null}
+
+          <View style={styles.infoSection}>
+            <ProfileInfoField
+              label={t.profile.firstName}
+              value={firstName}
+              mode="editable"
+              icon="edit"
+              editing={editingField === "firstName"}
+              draft={draftFirstName}
+              onDraftChange={setDraftFirstName}
+              onStartEdit={() => startEdit("firstName")}
+              onSave={() => saveField("firstName")}
+              saving={savingField === "firstName"}
+            />
+            <ProfileInfoField
+              label={t.profile.lastName}
+              value={lastName}
+              mode="editable"
+              icon="edit"
+              editing={editingField === "lastName"}
+              draft={draftLastName}
+              onDraftChange={setDraftLastName}
+              onStartEdit={() => startEdit("lastName")}
+              onSave={() => saveField("lastName")}
+              saving={savingField === "lastName"}
+            />
+            <ProfileInfoField
+              label={t.profile.phoneNumber}
+              value={phone}
+              mode="protected"
+              icon={phoneVerified ? "verified" : "lock"}
+              onProtectedPress={handlePhonePress}
+            />
+            <ProfileInfoField
+              label={t.profile.email}
+              value={email}
+              mode="protected"
+              icon="lock"
+            />
+          </View>
 
           <TouchableOpacity
             onPress={() => router.push("/profile/settings")}
@@ -259,6 +383,10 @@ function createStyles(colors: AppColors) {
       color: colors.textMuted,
       marginBottom: spacing.xs,
       alignSelf: "center",
+    },
+    infoSection: {
+      gap: spacing.base,
+      marginTop: spacing.sm,
     },
     settingsRow: {
       flexDirection: "row",
