@@ -248,6 +248,16 @@ export const translations = {
       phoneChangeMessage: 'Phone number changes require email confirmation.',
       saveError: 'Could not save changes. Please try again.',
     },
+    locationSearch: {
+      titleFrom: 'Where from?',
+      titleTo: 'Where to?',
+      placeholderFrom: 'Enter departure city',
+      placeholderTo: 'Enter destination city',
+      recent: 'Recent',
+      startTyping: 'Start typing to search for a city',
+      noResults: 'No matching cities',
+      loading: 'Searching…',
+    },
     settings: {
       title: 'Settings',
       language: 'Language',
@@ -506,6 +516,16 @@ export const translations = {
       phoneChangeTitle: 'Телефонски број',
       phoneChangeMessage: 'Промената на телефонскиот број бара потврда преку е-пошта.',
       saveError: 'Неуспешно зачувување. Обидете се повторно.',
+    },
+    locationSearch: {
+      titleFrom: 'Од каде?',
+      titleTo: 'Каде?',
+      placeholderFrom: 'Внесете град на поаѓање',
+      placeholderTo: 'Внесете град на дестинација',
+      recent: 'Неодамнешни',
+      startTyping: 'Почнете да пишувате за да пребарувате град',
+      noResults: 'Нема совпаѓачки градови',
+      loading: 'Пребарување…',
     },
     settings: {
       title: 'Поставки',

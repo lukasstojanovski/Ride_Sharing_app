@@ -2,21 +2,38 @@ import { useCallback } from "react";
 import { Stack, useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "@/lib/ThemeContext";
+import { useLocationSearch } from "@/lib/LocationSearchContext";
+import { OFFER_LOCATION_SEARCH_KEY } from "@/lib/locationSearch/routes";
 import { OfferWizardProvider, useOfferWizard } from "./OfferWizardContext";
 
 function OfferStackWithTabReset() {
-  const { stackKey, resetWizard, remountStack } = useOfferWizard();
+  const { stackKey, resetWizard, remountStack, setFrom, setTo } = useOfferWizard();
   const router = useRouter();
   const { colors } = useTheme();
+  const { consumeSkipTabResetOnFocus, peekSearchDraft } = useLocationSearch();
 
   useFocusEffect(
     useCallback(() => {
+      if (consumeSkipTabResetOnFocus(OFFER_LOCATION_SEARCH_KEY)) {
+        const draft = peekSearchDraft(OFFER_LOCATION_SEARCH_KEY);
+        setFrom(draft.from);
+        setTo(draft.to);
+        return;
+      }
       resetWizard();
       remountStack();
       queueMicrotask(() => {
         router.replace("/tabs/offer");
       });
-    }, [resetWizard, remountStack, router])
+    }, [
+      consumeSkipTabResetOnFocus,
+      peekSearchDraft,
+      setFrom,
+      setTo,
+      resetWizard,
+      remountStack,
+      router,
+    ]),
   );
 
   return (

@@ -8,6 +8,7 @@ import { ThemeProvider } from "../lib/ThemeContext";
 import { UnreadNotificationsProvider } from "../lib/UnreadNotificationsContext";
 import { UnreadInboxProvider } from "../lib/UnreadInboxContext";
 import { registerPushToken } from "../lib/registerPushToken";
+import { LocationSearchProvider } from "../lib/LocationSearchContext";
 
 function AuthGate() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -81,11 +82,13 @@ function AuthGate() {
   if (session === undefined) return null;
 
   return (
-    <UnreadNotificationsProvider>
-      <UnreadInboxProvider>
-        <Slot />
-      </UnreadInboxProvider>
-    </UnreadNotificationsProvider>
+    <LocationSearchProvider>
+      <UnreadNotificationsProvider>
+        <UnreadInboxProvider>
+          <Slot />
+        </UnreadInboxProvider>
+      </UnreadNotificationsProvider>
+    </LocationSearchProvider>
   );
 }
 

@@ -1,7 +1,7 @@
+import { useCallback } from "react";
 import {
   View,
   Text,
-  
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -13,11 +13,29 @@ import { AppHeader } from "@/components/AppHeader";
 import { useI18n } from "@/lib/i18n";
 import { useOfferWizard } from "./OfferWizardContext";
 import { useOfferStepStyles } from "./stepStyles";
+import { useRestoreLocationSearchDraft } from "@/lib/useRestoreLocationSearchDraft";
+import {
+  OFFER_LOCATION_RETURN_TO_FROM,
+  OFFER_LOCATION_SEARCH_KEY,
+} from "@/lib/locationSearch/routes";
 
 export default function OfferWhereFromScreen() {
   const { t } = useI18n();
   const stepStyles = useOfferStepStyles();
-  const { from, setFrom, to, setError, error } = useOfferWizard();
+  const { from, setFrom, to, setTo, setError, error } = useOfferWizard();
+
+  const getLocationFormValues = useCallback(
+    () => ({ from, to }),
+    [from, to],
+  );
+
+  useRestoreLocationSearchDraft(
+    OFFER_LOCATION_SEARCH_KEY,
+    useCallback((draft) => {
+      setFrom(draft.from);
+      setTo(draft.to);
+    }, [setFrom, setTo]),
+  );
 
   const goNext = () => {
     const f = from.trim();
@@ -54,7 +72,15 @@ export default function OfferWhereFromScreen() {
           <Text style={stepStyles.subtitle}>{t.offer.whereFromSubtitle}</Text>
 
           <View style={stepStyles.formCard}>
-            <CityPickerInput value={from} onChange={setFrom} placeholder={t.offer.from} />
+            <CityPickerInput
+              screenKey={OFFER_LOCATION_SEARCH_KEY}
+              returnTo={OFFER_LOCATION_RETURN_TO_FROM}
+              field="from"
+              getFormValues={getLocationFormValues}
+              value={from}
+              onChange={setFrom}
+              placeholder={t.offer.from}
+            />
           </View>
 
           {error ? <Text style={stepStyles.errorText}>{error}</Text> : null}

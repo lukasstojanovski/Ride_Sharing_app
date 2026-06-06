@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -20,6 +20,11 @@ import { typography, spacing, radius, shadows } from "@/constants/theme";
 import { useTheme } from "@/lib/ThemeContext";
 import type { AppColors } from "@/constants/colorPalettes";
 import { getRecentSearches, addRecentSearch, getUniqueRoutes } from "@/lib/recentSearches";
+import { useRestoreLocationSearchDraft } from "@/lib/useRestoreLocationSearchDraft";
+import {
+  HOME_LOCATION_RETURN_TO,
+  HOME_LOCATION_SEARCH_KEY,
+} from "@/lib/locationSearch/routes";
 
 const PROFILE_ICON_SIZE = 36;
 const MAX_VISIBLE_RECENT_ROUTES = 4;
@@ -45,6 +50,19 @@ export default function HomeScreen() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  const getLocationFormValues = useCallback(
+    () => ({ from, to }),
+    [from, to],
+  );
+
+  useRestoreLocationSearchDraft(
+    HOME_LOCATION_SEARCH_KEY,
+    useCallback((draft) => {
+      setFrom(draft.from);
+      setTo(draft.to);
+    }, []),
+  );
 
   useEffect(() => {
     (async () => {
@@ -156,11 +174,19 @@ export default function HomeScreen() {
 
         <View style={styles.formCard}>
           <CityPickerInput
+            screenKey={HOME_LOCATION_SEARCH_KEY}
+            returnTo={HOME_LOCATION_RETURN_TO}
+            field="from"
+            getFormValues={getLocationFormValues}
             value={from}
             onChange={setFrom}
             placeholder={t.home.from}
           />
           <CityPickerInput
+            screenKey={HOME_LOCATION_SEARCH_KEY}
+            returnTo={HOME_LOCATION_RETURN_TO}
+            field="to"
+            getFormValues={getLocationFormValues}
             value={to}
             onChange={setTo}
             placeholder={t.home.to}
